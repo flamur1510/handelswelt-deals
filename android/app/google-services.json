@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "273730391475",
+    "project_id": "handelswelt-703b0",
+    "storage_bucket": "handelswelt-703b0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:273730391475:android:f156fa61b98d4d396d4fc6",
+        "android_client_info": {
+          "package_name": "com.example.handelswelt"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBO0mVFqx4XJ6e7WXhVdNi1DSfDW6tcIg0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

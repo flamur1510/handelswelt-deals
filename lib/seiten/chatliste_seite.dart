@@ -7,161 +7,300 @@ import 'chat_seite.dart';
 class ChatlisteSeite extends StatelessWidget {
   const ChatlisteSeite({super.key});
 
-  String zeitText(dynamic zeit) {
-    if (zeit == null) return "";
-
-    final datum = (zeit as Timestamp).toDate();
-    final stunde = datum.hour.toString().padLeft(2, "0");
-    final minute = datum.minute.toString().padLeft(2, "0");
-
-    return "$stunde:$minute";
-  }
-
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    final breit = MediaQuery.of(context).size.width > 900;
 
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Meine Chats")),
-        body: const Center(
-          child: Text("Bitte zuerst einloggen."),
+        backgroundColor: const Color(0xfffafafe),
+        body: SafeArea(
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              margin: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: const Color(0xffececf4),
+                ),
+              ),
+              child: const Text(
+                "Bitte zuerst einloggen.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xff050b2c),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xfff6f3ff),
-      appBar: AppBar(
-        title: const Text("Meine Chats"),
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection("chats")
-            .orderBy("aktualisiertAm", descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final chats = snapshot.data!.docs.where((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-
-            return data["kaeuferId"] == user.uid ||
-                data["verkaeuferId"] == user.uid;
-          }).toList();
-
-          if (chats.isEmpty) {
-            return const Center(
-              child: Text(
-                "Noch keine Chats vorhanden.",
-                style: TextStyle(fontSize: 20),
-              ),
-            );
-          }
-
-          return ListView(
-            padding: const EdgeInsets.all(18),
+      backgroundColor: const Color(0xfffafafe),
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            breit ? 46 : 16,
+            18,
+            breit ? 46 : 16,
+            24,
+          ),
+          child: Column(
             children: [
-              for (final chat in chats)
-                Builder(
-                  builder: (context) {
-                    final data = chat.data() as Map<String, dynamic>;
-
-                    final istVerkaeufer = data["verkaeuferId"] == user.uid;
-
-                    final andereEmail = istVerkaeufer
-                        ? data["kaeuferEmail"] ?? "Unbekannt"
-                        : data["verkaeuferEmail"] ?? "Unbekannt";
-
-                    final ungelesen = istVerkaeufer
-                        ? data["ungelesenVerkaeufer"] ?? 0
-                        : data["ungelesenKaeufer"] ?? 0;
-
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 14),
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.all(14),
-                        leading: CircleAvatar(
-                          radius: 28,
-                          backgroundColor: Colors.deepPurple.withOpacity(0.12),
-                          child: const Icon(
-                            Icons.chat,
-                            color: Colors.deepPurple,
-                          ),
+              _kopfzeile(context),
+              const SizedBox(height: 18),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection("chats")
+                      .where("teilnehmer", arrayContains: user.uid)
+                      .orderBy("aktualisiertAm", descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xff5b2cff),
                         ),
-                        title: Text(
-                          data["produktTitel"] ?? "Chat",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 17,
-                          ),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 4),
-                            Text(andereEmail),
-                            const SizedBox(height: 4),
-                            Text(
-                              data["letzteNachricht"] ?? "",
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              zeitText(data["aktualisiertAm"]),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.black54,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            if (ungelesen > 0)
-                              CircleAvatar(
-                                radius: 12,
-                                backgroundColor: Colors.deepPurple,
-                                child: Text(
-                                  "$ungelesen",
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ChatSeite(
-                                verkaeuferId: data["verkaeuferId"] ?? "",
-                                verkaeuferEmail: data["verkaeuferEmail"] ?? "",
-                                produktId: data["produktId"] ?? "",
-                                produktTitel: data["produktTitel"] ?? "Chat",
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                      );
+                    }
+
+                    final chats = snapshot.data!.docs;
+
+                    if (chats.isEmpty) {
+                      return _leer();
+                    }
+
+                    return ListView.builder(
+                      itemCount: chats.length,
+                      itemBuilder: (context, index) {
+                        final daten =
+                            chats[index].data() as Map<String, dynamic>;
+
+                        return _chatKarte(
+                          context: context,
+                          userId: user.uid,
+                          daten: daten,
+                        );
+                      },
                     );
                   },
                 ),
+              ),
             ],
-          );
-        },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _kopfzeile(BuildContext context) {
+    return Row(
+      children: [
+        IconButton(
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.white,
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Color(0xff050b2c),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: const Color(0xfff1edff),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(
+            Icons.forum_outlined,
+            color: Color(0xff5b2cff),
+            size: 28,
+          ),
+        ),
+        const SizedBox(width: 12),
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Meine Chats",
+                style: TextStyle(
+                  color: Color(0xff050b2c),
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                "Nachrichten zu deinen Inseraten.",
+                style: TextStyle(
+                  color: Color(0xff74788d),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _chatKarte({
+    required BuildContext context,
+    required String userId,
+    required Map<String, dynamic> daten,
+  }) {
+    final produktTitel = daten["produktTitel"] ?? "Inserat";
+    final letzteNachricht = daten["letzteNachricht"] ?? "";
+    final verkaeuferId = daten["verkaeuferId"] ?? "";
+    final kaeuferId = daten["kaeuferId"] ?? "";
+    final verkaeuferEmail = daten["verkaeuferEmail"] ?? "";
+    final kaeuferEmail = daten["kaeuferEmail"] ?? "";
+    final produktId = daten["produktId"] ?? "";
+
+    final anderesEmail = userId == verkaeuferId ? kaeuferEmail : verkaeuferEmail;
+    final anderesId = userId == verkaeuferId ? kaeuferId : verkaeuferId;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(22),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChatSeite(
+              verkaeuferId: anderesId,
+              verkaeuferEmail: anderesEmail,
+              produktId: produktId,
+              produktTitel: produktTitel,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: const Color(0xffececf4),
+          ),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 27,
+              backgroundColor: const Color(0xfff1edff),
+              child: Text(
+                anderesEmail.isNotEmpty ? anderesEmail[0].toUpperCase() : "?",
+                style: const TextStyle(
+                  color: Color(0xff5b2cff),
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    produktTitel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xff050b2c),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    anderesEmail,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xff5b2cff),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    letzteNachricht,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xff74788d),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              color: Color(0xff74788d),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _leer() {
+    return Center(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(34),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: const Color(0xffececf4),
+          ),
+        ),
+        child: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.forum_outlined,
+              color: Color(0xff5b2cff),
+              size: 52,
+            ),
+            SizedBox(height: 14),
+            Text(
+              "Noch keine Chats",
+              style: TextStyle(
+                color: Color(0xff050b2c),
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            SizedBox(height: 6),
+            Text(
+              "Sobald du Nachrichten bekommst, erscheinen sie hier.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xff74788d),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

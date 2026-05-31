@@ -23,105 +23,61 @@ class ChatSeite extends StatefulWidget {
 class _ChatSeiteState extends State<ChatSeite> {
   final nachrichtController = TextEditingController();
 
-  String chatIdErstellen(String userId) {
-    final ids = [userId, widget.verkaeuferId];
-    ids.sort();
-    return "${ids[0]}_${ids[1]}_${widget.produktId}";
-  }
+  bool wirdGesendet = false;
 
-  String zeitText(dynamic zeit) {
-    if (zeit == null) return "";
-
-    final datum = (zeit as Timestamp).toDate();
-    final stunde = datum.hour.toString().padLeft(2, "0");
-    final minute = datum.minute.toString().padLeft(2, "0");
-
-    return "$stunde:$minute";
-  }
-
-  Future<void> newsErstellen({
-    required String empfaengerId,
-    required String senderEmail,
-    required String text,
-  }) async {
-    if (empfaengerId.isEmpty) return;
-
-    await FirebaseFirestore.instance.collection("benachrichtigungen").add({
-      "userId": empfaengerId,
-      "typ": "chat",
-      "titel": "Neue Nachricht",
-      "text": "$senderEmail: $text",
-      "produktId": widget.produktId,
-      "produktTitel": widget.produktTitel,
-      "verkaeuferId": widget.verkaeuferId,
-      "verkaeuferEmail": widget.verkaeuferEmail,
-      "gelesen": false,
-      "erstelltAm": FieldValue.serverTimestamp(),
-    });
+  String chatIdFuer(String userId) {
+    final ids = [userId, widget.verkaeuferId]..sort();
+    return "${widget.produktId}_${ids[0]}_${ids[1]}";
   }
 
   Future<void> nachrichtSenden() async {
     final user = FirebaseAuth.instance.currentUser;
 
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Bitte zuerst einloggen.")),
-      );
-      return;
-    }
+    if (user == null) return;
 
     final text = nachrichtController.text.trim();
 
     if (text.isEmpty) return;
 
-    final chatId = chatIdErstellen(user.uid);
+    setState(() {
+      wirdGesendet = true;
+    });
+
+    final chatId = chatIdFuer(user.uid);
+
     final chatRef = FirebaseFirestore.instance.collection("chats").doc(chatId);
 
-    final istVerkaeufer = user.uid == widget.verkaeuferId;
-
-    String kaeuferId = "";
-    String kaeuferEmail = "";
-
-    final chatDoc = await chatRef.get();
-
-    if (chatDoc.exists) {
-      final data = chatDoc.data() as Map<String, dynamic>;
-      kaeuferId = data["kaeuferId"] ?? "";
-      kaeuferEmail = data["kaeuferEmail"] ?? "";
-    }
-
-    if (!istVerkaeufer) {
-      kaeuferId = user.uid;
-      kaeuferEmail = user.email ?? "";
-    }
-
-    final empfaengerId = istVerkaeufer ? kaeuferId : widget.verkaeuferId;
-
-    await chatRef.set({
-      "produktId": widget.produktId,
-      "produktTitel": widget.produktTitel,
-      "kaeuferId": kaeuferId,
-      "kaeuferEmail": kaeuferEmail,
-      "verkaeuferId": widget.verkaeuferId,
-      "verkaeuferEmail": widget.verkaeuferEmail,
-      "letzteNachricht": text,
-      "aktualisiertAm": FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    await chatRef.set(
+      {
+        "chatId": chatId,
+        "produktId": widget.produktId,
+        "produktTitel": widget.produktTitel,
+        "teilnehmer": [
+          user.uid,
+          widget.verkaeuferId,
+        ],
+        "kaeuferId": user.uid,
+        "kaeuferEmail": user.email ?? "",
+        "verkaeuferId": widget.verkaeuferId,
+        "verkaeuferEmail": widget.verkaeuferEmail,
+        "letzteNachricht": text,
+        "aktualisiertAm": FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
 
     await chatRef.collection("nachrichten").add({
       "text": text,
       "senderId": user.uid,
       "senderEmail": user.email ?? "",
-      "zeit": FieldValue.serverTimestamp(),
+      "erstelltAm": FieldValue.serverTimestamp(),
     });
 
-    await newsErstellen(
-      empfaengerId: empfaengerId,
-      senderEmail: user.email ?? "Nutzer",
-      text: text,
-    );
-
     nachrichtController.clear();
+
+    setState(() {
+      wirdGesendet = false;
+    });
   }
 
   @override
@@ -133,146 +89,272 @@ class _ChatSeiteState extends State<ChatSeite> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    final breit = MediaQuery.of(context).size.width > 900;
 
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text("Chat"),
-          backgroundColor: Colors.deepPurple,
-          foregroundColor: Colors.white,
-        ),
-        body: const Center(
-          child: Text("Bitte zuerst im Profil einloggen."),
+        backgroundColor: const Color(0xfffafafe),
+        body: SafeArea(
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              margin: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: const Color(0xffececf4),
+                ),
+              ),
+              child: const Text(
+                "Bitte zuerst einloggen, um Nachrichten zu senden.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xff050b2c),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
         ),
       );
     }
 
-    final chatId = chatIdErstellen(user.uid);
+    final chatId = chatIdFuer(user.uid);
 
     return Scaffold(
-      backgroundColor: const Color(0xfff6f3ff),
-      appBar: AppBar(
-        title: Text(widget.produktTitel),
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
-      ),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            color: Colors.white,
-            child: Text(
-              "Verkäufer: ${widget.verkaeuferEmail}",
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+      backgroundColor: const Color(0xfffafafe),
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            breit ? 46 : 16,
+            16,
+            breit ? 46 : 16,
+            16,
           ),
-
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection("chats")
-                  .doc(chatId)
-                  .collection("nachrichten")
-                  .orderBy("zeit", descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final nachrichten = snapshot.data!.docs;
-
-                if (nachrichten.isEmpty) {
-                  return const Center(
-                    child: Text("Noch keine Nachrichten."),
-                  );
-                }
-
-                return ListView.builder(
-                  reverse: true,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: nachrichten.length,
-                  itemBuilder: (context, index) {
-                    final data =
-                        nachrichten[index].data() as Map<String, dynamic>;
-
-                    final istIch = data["senderId"] == user.uid;
-
-                    return Align(
-                      alignment:
-                          istIch ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(14),
-                        constraints: const BoxConstraints(maxWidth: 300),
-                        decoration: BoxDecoration(
-                          color: istIch ? Colors.deepPurple : Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                data["text"] ?? "",
-                                style: TextStyle(
-                                  color: istIch ? Colors.white : Colors.black,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              zeitText(data["zeit"]),
-                              style: TextStyle(
-                                color:
-                                    istIch ? Colors.white70 : Colors.black45,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-
-          Container(
-            padding: const EdgeInsets.all(12),
-            color: Colors.white,
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: nachrichtController,
-                    decoration: InputDecoration(
-                      hintText: "Nachricht schreiben...",
-                      filled: true,
-                      fillColor: const Color(0xfff6f3ff),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(22),
-                        borderSide: BorderSide.none,
-                      ),
+          child: Column(
+            children: [
+              _kopfzeile(context),
+              const SizedBox(height: 14),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: const Color(0xffececf4),
                     ),
-                    onSubmitted: (_) => nachrichtSenden(),
+                  ),
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection("chats")
+                        .doc(chatId)
+                        .collection("nachrichten")
+                        .orderBy("erstelltAm", descending: true)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xff5b2cff),
+                          ),
+                        );
+                      }
+
+                      final nachrichten = snapshot.data!.docs;
+
+                      if (nachrichten.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            "Noch keine Nachrichten.\nSchreibe die erste Nachricht.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xff74788d),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        );
+                      }
+
+                      return ListView.builder(
+                        reverse: true,
+                        padding: const EdgeInsets.all(14),
+                        itemCount: nachrichten.length,
+                        itemBuilder: (context, index) {
+                          final daten = nachrichten[index].data()
+                              as Map<String, dynamic>;
+
+                          final istIch = daten["senderId"] == user.uid;
+
+                          return _nachrichtBubble(
+                            text: daten["text"] ?? "",
+                            istIch: istIch,
+                          );
+                        },
+                      );
+                    },
                   ),
                 ),
+              ),
+              const SizedBox(height: 12),
+              _eingabeLeiste(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                const SizedBox(width: 10),
-
-                CircleAvatar(
-                  backgroundColor: Colors.deepPurple,
-                  child: IconButton(
-                    icon: const Icon(Icons.send, color: Colors.white),
-                    onPressed: nachrichtSenden,
-                  ),
+  Widget _kopfzeile(BuildContext context) {
+    return Row(
+      children: [
+        IconButton(
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.white,
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Color(0xff050b2c),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: const Color(0xfff1edff),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(
+            Icons.chat_bubble_outline,
+            color: Color(0xff5b2cff),
+            size: 27,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Nachricht",
+                style: TextStyle(
+                  color: Color(0xff050b2c),
+                  fontSize: 23,
+                  fontWeight: FontWeight.w900,
                 ),
-              ],
+              ),
+              Text(
+                widget.produktTitel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xff74788d),
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _nachrichtBubble({
+    required String text,
+    required bool istIch,
+  }) {
+    return Align(
+      alignment: istIch ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        constraints: const BoxConstraints(
+          maxWidth: 520,
+        ),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 15,
+          vertical: 11,
+        ),
+        decoration: BoxDecoration(
+          color: istIch ? const Color(0xff5b2cff) : const Color(0xfff3f3f8),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
+            bottomLeft: Radius.circular(istIch ? 18 : 4),
+            bottomRight: Radius.circular(istIch ? 4 : 18),
+          ),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: istIch ? Colors.white : const Color(0xff050b2c),
+            fontSize: 15,
+            height: 1.35,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _eingabeLeiste() {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: const Color(0xffececf4),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: nachrichtController,
+              minLines: 1,
+              maxLines: 4,
+              decoration: InputDecoration(
+                hintText: "Nachricht schreiben...",
+                filled: true,
+                fillColor: const Color(0xfff7f7fb),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(17),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 52,
+            height: 52,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff5b2cff),
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(17),
+                ),
+              ),
+              onPressed: wirdGesendet ? null : nachrichtSenden,
+              child: wirdGesendet
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.send,
+                      color: Colors.white,
+                    ),
             ),
           ),
         ],

@@ -26,16 +26,30 @@ class _KarteSeiteState extends State<KarteSeite> {
   String ortFilter = "";
   String kategorieFilter = "Alle";
 
+  LatLng? gesuchterStandort;
+
+  void _zurStartseite() {
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
   final kategorien = const [
     "Alle",
-    "Autos",
+    "Marktplatz",
+    "Auto & Motor",
     "Immobilien",
-    "Elektronik",
-    "Möbel",
     "Jobs",
+    "Elektronik",
+    "Haus & Garten",
     "Mode",
     "Dienstleistungen",
     "Baumarkt",
+    "Baumaschinen",
+    "Boote",
+    "Landwirtschaft",
+    "Freizeit",
+    "Tiere",
+    "Baby & Kind",
+    "Sport",
   ];
 
   Future<void> adresseSuchen() async {
@@ -69,10 +83,13 @@ class _KarteSeiteState extends State<KarteSeite> {
         final lat = double.parse(daten[0]["lat"]);
         final lon = double.parse(daten[0]["lon"]);
 
-        mapController.move(
-          LatLng(lat, lon),
-          14,
-        );
+        final punkt = LatLng(lat, lon);
+
+        setState(() {
+          gesuchterStandort = punkt;
+        });
+
+        mapController.move(punkt, 16);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -94,15 +111,45 @@ class _KarteSeiteState extends State<KarteSeite> {
   }
 
   IconData iconFuerKategorie(String kategorie) {
+    if (kategorie == "Alle") return Icons.apps_outlined;
+    if (kategorie == "Marktplatz") return Icons.storefront_outlined;
+    if (kategorie == "Auto & Motor") return Icons.directions_car;
     if (kategorie == "Immobilien") return Icons.home_outlined;
-    if (kategorie == "Autos") return Icons.directions_car;
-    if (kategorie == "Elektronik") return Icons.phone_iphone;
-    if (kategorie == "Möbel") return Icons.chair_outlined;
     if (kategorie == "Jobs") return Icons.work_outline;
+    if (kategorie == "Elektronik") return Icons.phone_iphone;
+    if (kategorie == "Haus & Garten") return Icons.chair_outlined;
     if (kategorie == "Mode") return Icons.checkroom_outlined;
     if (kategorie == "Dienstleistungen") return Icons.handyman_outlined;
     if (kategorie == "Baumarkt") return Icons.construction_outlined;
-    return Icons.shopping_bag_outlined;
+    if (kategorie == "Baumaschinen") {
+      return Icons.precision_manufacturing_outlined;
+    }
+    if (kategorie == "Boote") return Icons.sailing_outlined;
+    if (kategorie == "Landwirtschaft") return Icons.agriculture_outlined;
+    if (kategorie == "Freizeit") return Icons.sports_soccer_outlined;
+    if (kategorie == "Tiere") return Icons.pets_outlined;
+    if (kategorie == "Baby & Kind") return Icons.child_care_outlined;
+    if (kategorie == "Sport") return Icons.fitness_center_outlined;
+
+    return Icons.category_outlined;
+  }
+
+  bool kategoriePasst(Produkt produkt) {
+    if (kategorieFilter == "Alle") return true;
+
+    if (kategorieFilter == "Auto & Motor") {
+      return produkt.kategorie == "Auto & Motor" ||
+          produkt.kategorie == "Autos" ||
+          produkt.kategorie == "Motorräder" ||
+          produkt.kategorie == "Motorrad";
+    }
+
+    if (kategorieFilter == "Haus & Garten") {
+      return produkt.kategorie == "Haus & Garten" ||
+          produkt.kategorie == "Möbel";
+    }
+
+    return produkt.kategorie == kategorieFilter;
   }
 
   String preisText(Produkt produkt) {
@@ -142,22 +189,23 @@ class _KarteSeiteState extends State<KarteSeite> {
                   produkt.ort.toLowerCase().contains(ortFilter) ||
                   produkt.adresse.toLowerCase().contains(ortFilter);
 
-              final passtKategorie = kategorieFilter == "Alle" ||
-                  produkt.kategorie == kategorieFilter;
+              final passtKategorie = kategoriePasst(produkt);
 
               return passtOrt && passtKategorie;
             }).toList();
 
             return Padding(
               padding: EdgeInsets.fromLTRB(
-                breit ? 46 : 16,
-                18,
-                breit ? 46 : 16,
+                breit ? 28 : 16,
+                14,
+                breit ? 28 : 16,
                 24,
               ),
               child: Column(
                 children: [
-                  _kopfzeile(produkte.length),
+                  _kopfzeile(breit),
+                  const SizedBox(height: 16),
+                  _kartenInfoZeile(produkte.length),
                   const SizedBox(height: 14),
                   _suchLeiste(),
                   const SizedBox(height: 14),
@@ -192,7 +240,131 @@ class _KarteSeiteState extends State<KarteSeite> {
     );
   }
 
-  Widget _kopfzeile(int anzahl) {
+  Widget _kopfzeile(bool breit) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: breit ? 22 : 14,
+        vertical: 13,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xff050b2c),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x18000000),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(17),
+            onTap: _zurStartseite,
+            child: Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xff5b2cff), Color(0xff7a5cff)],
+                ),
+                borderRadius: BorderRadius.circular(17),
+              ),
+              child: const Icon(Icons.language, color: Colors.white, size: 27),
+            ),
+          ),
+          const SizedBox(width: 10),
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: _zurStartseite,
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    "HANDELSWELT",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      height: 1,
+                    ),
+                  ),
+                  Text(
+                    "DEALS",
+                    style: TextStyle(
+                      color: Color(0xffb9a8ff),
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w900,
+                      height: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Spacer(),
+          if (breit) ...[
+            _navChip("Start", Icons.home_outlined, false, _zurStartseite),
+            const SizedBox(width: 8),
+            _navChip("Karte", Icons.map_outlined, true, null),
+          ],
+          if (!breit)
+            IconButton(
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.08),
+              ),
+              onPressed: _zurStartseite,
+              icon: const Icon(Icons.home_outlined, color: Colors.white),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _navChip(String text, IconData icon, bool aktiv, VoidCallback? onTap) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(30),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+        decoration: BoxDecoration(
+          color: aktiv
+              ? const Color(0xff5b2cff).withOpacity(0.18)
+              : Colors.white.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: aktiv
+                ? const Color(0xff7a5cff)
+                : Colors.white.withOpacity(0.12),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: aktiv ? const Color(0xffb9a8ff) : Colors.white70,
+              size: 17,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              text,
+              style: TextStyle(
+                color: aktiv ? const Color(0xffb9a8ff) : Colors.white70,
+                fontWeight: FontWeight.w900,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _kartenInfoZeile(int anzahl) {
     return Row(
       children: [
         Container(
@@ -200,7 +372,7 @@ class _KarteSeiteState extends State<KarteSeite> {
           height: 52,
           decoration: BoxDecoration(
             color: const Color(0xfff1edff),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
           ),
           child: const Icon(
             Icons.map_outlined,
@@ -219,14 +391,16 @@ class _KarteSeiteState extends State<KarteSeite> {
                   color: Color(0xff050b2c),
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
+                  height: 1,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
-                "$anzahl Inserate in deiner Nähe",
+                "$anzahl Inserate auf der Karte",
                 style: const TextStyle(
                   color: Color(0xff74788d),
                   fontSize: 14,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -237,6 +411,12 @@ class _KarteSeiteState extends State<KarteSeite> {
             backgroundColor: const Color(0xfff1edff),
           ),
           onPressed: () {
+            setState(() {
+              gesuchterStandort = null;
+              ortFilter = "";
+              sucheController.clear();
+            });
+
             mapController.move(
               const LatLng(48.2082, 16.3738),
               12,
@@ -258,11 +438,12 @@ class _KarteSeiteState extends State<KarteSeite> {
           child: SizedBox(
             height: 50,
             child: TextField(
+              cursorColor: const Color(0xff5b2cff),
               controller: sucheController,
               onSubmitted: (_) => adresseSuchen(),
               decoration: InputDecoration(
                 hintText: "Ort oder Adresse suchen...",
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search, color: Color(0xff5b2cff)),
                 filled: true,
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(
@@ -279,6 +460,13 @@ class _KarteSeiteState extends State<KarteSeite> {
                   borderRadius: BorderRadius.circular(17),
                   borderSide: const BorderSide(
                     color: Color(0xffececf4),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(17),
+                  borderSide: const BorderSide(
+                    color: Color(0xff5b2cff),
+                    width: 1.4,
                   ),
                 ),
               ),
@@ -321,40 +509,78 @@ class _KarteSeiteState extends State<KarteSeite> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        color: const Color(0xff050b2c),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: const Color(0xffececf4),
+          color: const Color(0xff202844),
         ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Filter",
-            style: TextStyle(
-              color: Color(0xff050b2c),
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-            ),
+          Row(
+            children: [
+              Container(
+                height: 36,
+                width: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xff5b2cff).withOpacity(0.18),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: const Icon(
+                  Icons.tune,
+                  color: Color(0xffb9a8ff),
+                  size: 21,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  "Filter",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             "$anzahl Ergebnisse",
             style: const TextStyle(
-              color: Color(0xff74788d),
+              color: Colors.white70,
               fontSize: 13,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 18),
-          for (final kategorie in kategorien)
-            _filterItem(kategorie),
-          const Spacer(),
+          const SizedBox(height: 14),
+          Expanded(
+            child: Scrollbar(
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    for (final kategorie in kategorien) _filterItem(kategorie),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 46),
               side: const BorderSide(
-                color: Color(0xff5b2cff),
+                color: Color(0xff7a5cff),
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15),
@@ -364,17 +590,18 @@ class _KarteSeiteState extends State<KarteSeite> {
               setState(() {
                 kategorieFilter = "Alle";
                 ortFilter = "";
+                gesuchterStandort = null;
                 sucheController.clear();
               });
             },
             icon: const Icon(
               Icons.refresh,
-              color: Color(0xff5b2cff),
+              color: Color(0xffb9a8ff),
             ),
             label: const Text(
               "Zurücksetzen",
               style: TextStyle(
-                color: Color(0xff5b2cff),
+                color: Color(0xffb9a8ff),
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -401,16 +628,19 @@ class _KarteSeiteState extends State<KarteSeite> {
           vertical: 11,
         ),
         decoration: BoxDecoration(
-          color: aktiv ? const Color(0xfff1edff) : Colors.transparent,
+          color: aktiv
+              ? const Color(0xff5b2cff).withOpacity(0.18)
+              : const Color(0xff111833),
           borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: aktiv ? const Color(0xff7a5cff) : const Color(0xff26304f),
+          ),
         ),
         child: Row(
           children: [
             Icon(
               iconFuerKategorie(kategorie),
-              color: aktiv
-                  ? const Color(0xff5b2cff)
-                  : const Color(0xff74788d),
+              color: aktiv ? const Color(0xffb9a8ff) : Colors.white70,
               size: 21,
             ),
             const SizedBox(width: 9),
@@ -418,10 +648,8 @@ class _KarteSeiteState extends State<KarteSeite> {
               child: Text(
                 kategorie,
                 style: TextStyle(
-                  color: aktiv
-                      ? const Color(0xff5b2cff)
-                      : const Color(0xff050b2c),
-                  fontWeight: aktiv ? FontWeight.w900 : FontWeight.w600,
+                  color: aktiv ? Colors.white : Colors.white70,
+                  fontWeight: aktiv ? FontWeight.w900 : FontWeight.w700,
                 ),
               ),
             ),
@@ -506,6 +734,17 @@ class _KarteSeiteState extends State<KarteSeite> {
               ),
               MarkerLayer(
                 markers: [
+                  if (gesuchterStandort != null)
+                    Marker(
+                      point: gesuchterStandort!,
+                      width: 70,
+                      height: 70,
+                      child: const Icon(
+                        Icons.location_pin,
+                        color: Colors.blue,
+                        size: 60,
+                      ),
+                    ),
                   for (final produkt in produkte)
                     Marker(
                       point: LatLng(

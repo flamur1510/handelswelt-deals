@@ -1,16 +1,18 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 
+import '../kategorien_daten/kategorien.dart' as kdaten;
 import '../model/produkt.dart';
-import '../auto_daten/auto_daten.dart';
-import '../immobilien_daten/immobilien_daten.dart';
+import '../widgets/dienstleistungen_felder.dart';
+import '../widgets/inserat_form_widgets.dart';
+import '../widgets/jobs_felder.dart';
 
 class InseratSeite extends StatefulWidget {
   final Function(Produkt) onSpeichern;
@@ -35,63 +37,106 @@ class _InseratSeiteState extends State<InseratSeite> {
   final firmennameController = TextEditingController();
   final webseiteController = TextEditingController();
 
-  final baujahrController = TextEditingController();
-  final kilometerController = TextEditingController();
-  final leistungController = TextEditingController();
-  final erstzulassungController = TextEditingController();
-  final vorbesitzerController = TextEditingController();
-  final tuevController = TextEditingController();
-  final hubraumController = TextEditingController();
-  final verbrauchController = TextEditingController();
-  final co2Controller = TextEditingController();
-  final schluesselController = TextEditingController();
-
-  final wohnflaecheController = TextEditingController();
-  final zimmerController = TextEditingController();
-  final etageController = TextEditingController();
-  final kautionController = TextEditingController();
-  final betriebskostenController = TextEditingController();
-  final baujahrImmobilieController = TextEditingController();
-
   final herstellerController = TextEditingController();
   final garantieController = TextEditingController();
 
+  final autoMarkeController = TextEditingController();
+  final autoModellController = TextEditingController();
+  final autoBaujahrController = TextEditingController();
+  final autoKilometerController = TextEditingController();
+  final autoLeistungController = TextEditingController();
+  final autoErstzulassungController = TextEditingController();
+  final autoFarbeController = TextEditingController();
+  final autoTuerenController = TextEditingController();
+  final autoSitzeController = TextEditingController();
+  final autoPickerlController = TextEditingController();
+  final autoVorbesitzerController = TextEditingController();
+  final autoKarosserieController = TextEditingController();
+  final autoAntriebController = TextEditingController();
+  final autoHubraumController = TextEditingController();
+  final autoVerbrauchController = TextEditingController();
+  final autoCo2Controller = TextEditingController();
+  final autoSchluesselController = TextEditingController();
+
+  final immobilienWohnflaecheController = TextEditingController();
+  final immobilienZimmerController = TextEditingController();
+  final immobilienKautionController = TextEditingController();
+  final immobilienBetriebskostenController = TextEditingController();
+  final immobilienNutzflaecheController = TextEditingController();
+  final immobilienGrundstueckController = TextEditingController();
+  final immobilienEtageController = TextEditingController();
+  final immobilienHeizungController = TextEditingController();
+  final immobilienEnergieausweisController = TextEditingController();
+  final immobilienProvisionController = TextEditingController();
+  final immobilienVerfuegbarAbController = TextEditingController();
+  final immobilienBaujahrController = TextEditingController();
+  final immobilienEnergieklasseController = TextEditingController();
+
+  final bootMarkeController = TextEditingController();
+  final bootModellController = TextEditingController();
+  final bootBaujahrController = TextEditingController();
+  final bootLaengeController = TextEditingController();
+  final bootLeistungController = TextEditingController();
+
+  final baumaschinenZustandController = TextEditingController();
+  final baumaschinenBaujahrController = TextEditingController();
+  final baumaschinenBetriebsstundenController = TextEditingController();
+  final baumaschinenGewichtController = TextEditingController();
+
+  final baumarktHerstellerController = TextEditingController();
+  final baumarktMaterialController = TextEditingController();
+  final baumarktMengeController = TextEditingController();
+
+  final jobGehaltController = TextEditingController();
+  final jobArbeitsortController = TextEditingController();
+  final jobErfahrungController = TextEditingController();
+
+  final dienstleistungEinsatzgebietController = TextEditingController();
+  final dienstleistungPreisController = TextEditingController();
+  final dienstleistungOeffnungszeitenController = TextEditingController();
+
+  final vermietungTagespreisController = TextEditingController();
+  final vermietungWochenpreisController = TextEditingController();
+  final vermietungKautionController = TextEditingController();
+  final vermietungMindestmietdauerController = TextEditingController();
+  final vermietungUebergabeortController = TextEditingController();
+  final vermietungVerfuegbarkeitController = TextEditingController();
+
   String kategorie = "Marktplatz";
-  String typ = "Privat";
+  String unterkategorie = "";
+  String detailUnterkategorie = "";
+  String typ = "";
 
-  String ausgewaehlteMarke = "Audi";
-  String ausgewaehltesModell = "A1";
-  String ausgewaehlterKraftstoff = "Benzin";
-  String ausgewaehltesGetriebe = "Automatik";
-  String ausgewaehlterZustand = "Gebraucht";
+  String zustand = "Gebraucht";
+  String autoKraftstoff = "Benzin";
+  String autoGetriebe = "Automatik";
+  String autoUnfallfrei = "Ja";
+  String autoServicegepflegt = "Ja";
+  String autoInzahlungnahme = "Nein";
+  String autoLeasingMoeglich = "Nein";
+  String autoFinanzierungMoeglich = "Nein";
+  String autoNichtraucher = "Nein";
+  String autoMwstAusweisbar = "Nein";
 
-  String ausgewaehlteFarbe = "Schwarz";
-  String ausgewaehlteKarosserie = "Limousine";
-  String ausgewaehlterAntrieb = "Frontantrieb";
-  String ausgewaehlteUnfallfrei = "Ja";
-  String ausgewaehlteTueren = "5";
-  String ausgewaehlteSitze = "5";
-  String ausgewaehlteServiceheft = "Ja";
-  String ausgewaehlteNichtraucher = "Ja";
-  String ausgewaehlteMwst = "Nein";
-  String ausgewaehltesPickerlNeu = "Nein";
+  String immobilienArt = "Wohnung mieten";
+  String bootstyp = "Motorboot";
+  String immobilienBalkon = "Nein";
+  String immobilienTerrasse = "Nein";
+  String immobilienGarten = "Nein";
+  String immobilienGarage = "Nein";
+  String immobilienLift = "Nein";
+  String immobilienKeller = "Nein";
+  String immobilienMoebliert = "Nein";
 
-  String ausgewaehltesLeasing = "Nein";
-  String ausgewaehlteFinanzierung = "Nein";
-  String ausgewaehlteInzahlungnahme = "Nein";
+  String jobBeschaeftigungsart = "Vollzeit";
+  String jobHomeoffice = "Nein";
+  String jobFuehrerschein = "Nein";
 
-  String ausgewaehlteImmobilienArt = "Wohnung mieten";
-  String ausgewaehlterImmobilienZustand = "Gut";
-  String ausgewaehlterBalkon = "Nein";
-  String ausgewaehlteTerrasse = "Nein";
-  String ausgewaehlterGarten = "Nein";
-  String ausgewaehlteGarage = "Nein";
-  String ausgewaehlterLift = "Nein";
-  String ausgewaehlterKeller = "Nein";
-  String ausgewaehltMoebliert = "Nein";
-  String ausgewaehlteEnergieklasse = "A";
-  String ausgewaehlteHeizung = "Fernwärme";
-  String ausgewaehlteVerfuegbarkeit = "Sofort";
+  String dienstleistungAnfahrt = "Ja";
+  String dienstleistungNotdienst = "Nein";
+
+  String vermietungLieferungMoeglich = "Nein";
+  String vermietungVersicherungInklusive = "Nein";
 
   bool telefonSichtbar = false;
   bool whatsappAktiv = false;
@@ -100,16 +145,13 @@ class _InseratSeiteState extends State<InseratSeite> {
 
   List<Uint8List> bilderBytes = [];
 
-  final kategorien = const [
-    "Marktplatz",
-    "Immobilien",
-    "Autos",
-    "Elektronik",
-    "Möbel",
-    "Jobs",
-    "Mode",
-    "Dienstleistungen",
-    "Baumarkt",
+  final zustaende = const [
+    "Neu",
+    "Wie neu",
+    "Sehr gut",
+    "Gut",
+    "Gebraucht",
+    "Defekt",
   ];
 
   final kraftstoffe = const [
@@ -127,73 +169,80 @@ class _InseratSeiteState extends State<InseratSeite> {
     "Halbautomatik",
   ];
 
-  final zustaende = const [
-    "Neu",
-    "Wie neu",
-    "Sehr gut",
-    "Gut",
-    "Gebraucht",
-    "Defekt",
+  final immobilienArten = const [
+    "Wohnung mieten",
+    "Wohnung kaufen",
+    "Haus mieten",
+    "Haus kaufen",
+    "Grundstück",
+    "Gewerbeimmobilie",
+    "Ferienimmobilie",
   ];
 
-  final farben = const [
-    "Schwarz",
-    "Weiß",
-    "Silber",
-    "Grau",
-    "Blau",
-    "Rot",
-    "Grün",
-    "Gelb",
-    "Orange",
-    "Braun",
-    "Beige",
-    "Gold",
-    "Andere",
+  final bootstypen = const [
+    "Motorboot",
+    "Segelboot",
+    "Yacht",
+    "Jetski",
+    "Schlauchboot",
+    "Hausboot",
+    "Angelboot",
+    "Kajak/Kanu",
   ];
 
-  final karosserien = const [
-    "Limousine",
-    "Kombi",
-    "SUV/Geländewagen",
-    "Kleinwagen",
-    "Coupé",
-    "Cabrio",
-    "Van/Minibus",
-    "Transporter",
-    "Pickup",
-    "Andere",
-  ];
+  @override
+  void initState() {
+    super.initState();
+    kontoTypLaden();
+  }
 
-  final antriebe = const [
-    "Frontantrieb",
-    "Heckantrieb",
-    "Allrad",
-    "Andere",
-  ];
+  Future<void> kontoTypLaden() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-  final jaNein = const [
-    "Ja",
-    "Nein",
-  ];
+    final doc =
+        await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
 
-  final tuerenListe = const [
-    "2",
-    "3",
-    "4",
-    "5",
-    "6+",
-  ];
+    if (!doc.exists) return;
 
-  final sitzeListe = const [
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7",
-    "8+",
-  ];
+    final data = doc.data() ?? {};
+    final kontoTyp = (data["kontoTyp"] ?? "privat").toString();
+
+    if (!mounted) return;
+
+    setState(() {
+      typ = kontoTyp == "firma" ? "Firma" : "Privat";
+
+      if (typ == "Firma") {
+        firmennameController.text = (data["firmenname"] ?? "").toString();
+        webseiteController.text = (data["webseite"] ?? "").toString();
+        telefonController.text = (data["telefon"] ?? "").toString();
+
+        telefonSichtbar = true;
+        whatsappAktiv = true;
+        emailSichtbar = true;
+      } else {
+        telefonController.text = (data["telefon"] ?? "").toString();
+
+        telefonSichtbar = false;
+        whatsappAktiv = false;
+        emailSichtbar = false;
+      }
+    });
+  }
+
+  bool istVermietung() {
+    const vermietungen = [
+      "Autovermietung",
+      "Bootsvermietung",
+      "Baumaschinenvermietung",
+      "Anhängervermietung",
+      "Maschinenvermietung",
+    ];
+
+    return vermietungen.contains(unterkategorie) ||
+        vermietungen.contains(detailUnterkategorie);
+  }
 
   Future<Map<String, double>> koordinatenHolen(String suche) async {
     final url = Uri.parse(
@@ -226,20 +275,58 @@ class _InseratSeiteState extends State<InseratSeite> {
   }
 
   Future<void> bilderAuswaehlen() async {
+    const maxBilder = 30;
+
+    if (bilderBytes.length >= maxBilder) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Du kannst maximal 30 Bilder hochladen."),
+          backgroundColor: Color(0xff5b2cff),
+        ),
+      );
+      return;
+    }
+
     final picker = ImagePicker();
     final dateien = await picker.pickMultiImage();
 
     if (dateien.isEmpty) return;
 
+    final freiePlaetze = maxBilder - bilderBytes.length;
+    final ausgewaehlteDateien = dateien.take(freiePlaetze).toList();
     final neueBilder = <Uint8List>[];
 
-    for (final datei in dateien) {
+    for (final datei in ausgewaehlteDateien) {
       final bytes = await datei.readAsBytes();
       neueBilder.add(bytes);
     }
 
     setState(() {
       bilderBytes.addAll(neueBilder);
+    });
+
+    if (dateien.length > freiePlaetze && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Es wurden nur so viele Bilder übernommen, bis 30 Bilder erreicht sind."),
+          backgroundColor: Color(0xff5b2cff),
+        ),
+      );
+    }
+  }
+
+  void bildEntfernen(int index) {
+    setState(() {
+      bilderBytes.removeAt(index);
+    });
+  }
+
+  void bildAlsTitelbildSetzen(int index) {
+    if (index <= 0 || index >= bilderBytes.length) return;
+
+    setState(() {
+      final bild = bilderBytes.removeAt(index);
+      bilderBytes.insert(0, bild);
     });
   }
 
@@ -253,19 +340,12 @@ class _InseratSeiteState extends State<InseratSeite> {
     final urls = <String>[];
 
     for (final bild in bilderBytes) {
-      final name =
-          "${DateTime.now().millisecondsSinceEpoch}_${urls.length}.jpg";
-
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child("inserate")
-          .child(name);
+      final name = "${DateTime.now().millisecondsSinceEpoch}_${urls.length}.jpg";
+      final ref = FirebaseStorage.instance.ref().child("inserate").child(name);
 
       await ref.putData(
         bild,
-        SettableMetadata(
-          contentType: "image/jpeg",
-        ),
+        SettableMetadata(contentType: "image/jpeg"),
       );
 
       final url = await ref.getDownloadURL();
@@ -275,38 +355,26 @@ class _InseratSeiteState extends State<InseratSeite> {
     return urls;
   }
 
-  IconData iconFuerKategorie(String kategorie) {
-    if (kategorie == "Immobilien") return Icons.home_outlined;
-    if (kategorie == "Autos") return Icons.directions_car;
-    if (kategorie == "Elektronik") return Icons.phone_iphone;
-    if (kategorie == "Möbel") return Icons.chair_outlined;
-    if (kategorie == "Jobs") return Icons.work_outline;
-    if (kategorie == "Mode") return Icons.checkroom_outlined;
-    if (kategorie == "Dienstleistungen") return Icons.handyman_outlined;
-    if (kategorie == "Baumarkt") return Icons.construction_outlined;
-    return Icons.shopping_bag_outlined;
-  }
-
-  void typGeaendert(String neuerTyp) {
-    setState(() {
-      typ = neuerTyp;
-
-      if (typ == "Firma") {
-        telefonSichtbar = true;
-        whatsappAktiv = true;
-        emailSichtbar = true;
-      } else {
-        telefonSichtbar = false;
-        whatsappAktiv = false;
-        emailSichtbar = false;
-        ausgewaehltesLeasing = "Nein";
-        ausgewaehlteFinanzierung = "Nein";
-        ausgewaehlteInzahlungnahme = "Nein";
-      }
-    });
-  }
-
   bool pruefen() {
+    if (typ == "Privat" && !kdaten.darfPrivatInserieren(kategorie)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Diese Kategorie ist nur für Firmenkonten verfügbar."),
+        ),
+      );
+      return false;
+    }
+
+    if (typ == "Privat" &&
+        kdaten.istGewerblicheUnterkategorie(kategorie, unterkategorie)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Diese Unterkategorie ist nur für Firmenkonten verfügbar."),
+        ),
+      );
+      return false;
+    }
+
     if (titelController.text.trim().isEmpty ||
         preisController.text.trim().isEmpty ||
         ortController.text.trim().isEmpty) {
@@ -327,9 +395,22 @@ class _InseratSeiteState extends State<InseratSeite> {
       return false;
     }
 
-    if (kategorie == "Autos" &&
-        (baujahrController.text.trim().isEmpty ||
-            kilometerController.text.trim().isEmpty)) {
+    if (istVermietung()) {
+      if (vermietungTagespreisController.text.trim().isEmpty &&
+          vermietungWochenpreisController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Bitte Mietpreis pro Tag oder Woche eingeben."),
+          ),
+        );
+        return false;
+      }
+      return true;
+    }
+
+    if (kategorie == "Auto & Motor" &&
+        (autoBaujahrController.text.trim().isEmpty ||
+            autoKilometerController.text.trim().isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Bitte Baujahr und Kilometerstand eingeben."),
@@ -339,11 +420,32 @@ class _InseratSeiteState extends State<InseratSeite> {
     }
 
     if (kategorie == "Immobilien" &&
-        (wohnflaecheController.text.trim().isEmpty ||
-            zimmerController.text.trim().isEmpty)) {
+        (immobilienWohnflaecheController.text.trim().isEmpty ||
+            immobilienZimmerController.text.trim().isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Bitte Wohnfläche und Zimmer eingeben."),
+        ),
+      );
+      return false;
+    }
+
+    if (kategorie == "Jobs" &&
+        (jobGehaltController.text.trim().isEmpty ||
+            jobArbeitsortController.text.trim().isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Bitte Gehalt und Arbeitsort eingeben."),
+        ),
+      );
+      return false;
+    }
+
+    if (kategorie == "Dienstleistungen" &&
+        dienstleistungEinsatzgebietController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Bitte Einsatzgebiet eingeben."),
         ),
       );
       return false;
@@ -359,9 +461,7 @@ class _InseratSeiteState extends State<InseratSeite> {
 
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Bitte zuerst anmelden."),
-        ),
+        const SnackBar(content: Text("Bitte zuerst anmelden.")),
       );
       return;
     }
@@ -384,9 +484,11 @@ class _InseratSeiteState extends State<InseratSeite> {
         ort: ortController.text.trim(),
         adresse: adresseController.text.trim(),
         kategorie: kategorie,
+        unterkategorie: unterkategorie,
+        detailUnterkategorie: detailUnterkategorie,
         typ: typ,
         beschreibung: beschreibungController.text.trim(),
-        icon: iconFuerKategorie(kategorie),
+        icon: kdaten.iconFuerKategorie(kategorie),
         bild: bildUrls.first,
         bilder: bildUrls,
         verkaeuferId: user.uid,
@@ -399,96 +501,288 @@ class _InseratSeiteState extends State<InseratSeite> {
         emailSichtbar: emailSichtbar,
         latitude: koordinaten["lat"] ?? 48.2082,
         longitude: koordinaten["lon"] ?? 16.3738,
-
-        marke: kategorie == "Autos" ? ausgewaehlteMarke : "",
-        modell: kategorie == "Autos" ? ausgewaehltesModell : "",
-        baujahr: baujahrController.text.trim(),
-        kilometer: kilometerController.text.trim(),
-        kraftstoff: kategorie == "Autos" ? ausgewaehlterKraftstoff : "",
-        getriebe: kategorie == "Autos" ? ausgewaehltesGetriebe : "",
-        leistung: leistungController.text.trim(),
-        farbe: kategorie == "Autos" ? ausgewaehlteFarbe : "",
-        karosserie: kategorie == "Autos" ? ausgewaehlteKarosserie : "",
-        erstzulassung: erstzulassungController.text.trim(),
-        vorbesitzer: vorbesitzerController.text.trim(),
-        antrieb: kategorie == "Autos" ? ausgewaehlterAntrieb : "",
-        tuev: tuevController.text.trim(),
-        unfallfrei: kategorie == "Autos" ? ausgewaehlteUnfallfrei : "",
-        tueren: kategorie == "Autos" ? ausgewaehlteTueren : "",
-        sitze: kategorie == "Autos" ? ausgewaehlteSitze : "",
-        serviceheft: kategorie == "Autos" ? ausgewaehlteServiceheft : "",
-        nichtraucher: kategorie == "Autos" ? ausgewaehlteNichtraucher : "",
-        mwstAusweisbar: kategorie == "Autos" ? ausgewaehlteMwst : "",
-        hubraum: hubraumController.text.trim(),
-        verbrauch: verbrauchController.text.trim(),
-        co2: co2Controller.text.trim(),
-        schluessel: schluesselController.text.trim(),
-        pickerlNeu: kategorie == "Autos" ? ausgewaehltesPickerlNeu : "",
-        leasingMoeglich:
-            kategorie == "Autos" && typ == "Firma" ? ausgewaehltesLeasing : "",
-        finanzierungMoeglich: kategorie == "Autos" && typ == "Firma"
-            ? ausgewaehlteFinanzierung
+        marke: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoMarkeController.text.trim()
             : "",
-        inzahlungnahmeMoeglich: kategorie == "Autos" && typ == "Firma"
-            ? ausgewaehlteInzahlungnahme
+        modell: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoModellController.text.trim()
             : "",
-
-        immobilienArt:
-            kategorie == "Immobilien" ? ausgewaehlteImmobilienArt : "",
-        wohnflaeche: wohnflaecheController.text.trim(),
-        zimmer: zimmerController.text.trim(),
-        etage: etageController.text.trim(),
-        kaution: kautionController.text.trim(),
-        betriebskosten: betriebskostenController.text.trim(),
-        balkon: kategorie == "Immobilien" ? ausgewaehlterBalkon : "",
-        terrasse: kategorie == "Immobilien" ? ausgewaehlteTerrasse : "",
-        garten: kategorie == "Immobilien" ? ausgewaehlterGarten : "",
-        garage: kategorie == "Immobilien" ? ausgewaehlteGarage : "",
-        lift: kategorie == "Immobilien" ? ausgewaehlterLift : "",
-        keller: kategorie == "Immobilien" ? ausgewaehlterKeller : "",
-        moebliert: kategorie == "Immobilien" ? ausgewaehltMoebliert : "",
-        energieklasse:
-            kategorie == "Immobilien" ? ausgewaehlteEnergieklasse : "",
-        heizung: kategorie == "Immobilien" ? ausgewaehlteHeizung : "",
-        baujahrImmobilie: baujahrImmobilieController.text.trim(),
-        verfuegbarAb:
-            kategorie == "Immobilien" ? ausgewaehlteVerfuegbarkeit : "",
-
-        zustand: kategorie == "Immobilien"
-            ? ausgewaehlterImmobilienZustand
-            : ausgewaehlterZustand,
-        hersteller: herstellerController.text.trim(),
-        garantie: garantieController.text.trim(),
+        baujahr: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoBaujahrController.text.trim()
+            : "",
+        kilometer: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoKilometerController.text.trim()
+            : "",
+        kraftstoff: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoKraftstoff
+            : "",
+        getriebe: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoGetriebe
+            : "",
+        leistung: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoLeistungController.text.trim()
+            : "",
+        farbe: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoFarbeController.text.trim()
+            : "",
+        karosserie: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoKarosserieController.text.trim()
+            : "",
+        erstzulassung: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoErstzulassungController.text.trim()
+            : "",
+        vorbesitzer: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoVorbesitzerController.text.trim()
+            : "",
+        antrieb: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoAntriebController.text.trim()
+            : "",
+        tuev: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoPickerlController.text.trim()
+            : "",
+        unfallfrei: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoUnfallfrei
+            : "",
+        tueren: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoTuerenController.text.trim()
+            : "",
+        sitze: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoSitzeController.text.trim()
+            : "",
+        serviceheft: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoServicegepflegt
+            : "",
+        nichtraucher: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoNichtraucher
+            : "",
+        mwstAusweisbar: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoMwstAusweisbar
+            : "",
+        hubraum: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoHubraumController.text.trim()
+            : "",
+        verbrauch: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoVerbrauchController.text.trim()
+            : "",
+        co2: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoCo2Controller.text.trim()
+            : "",
+        schluessel: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoSchluesselController.text.trim()
+            : "",
+        leasingMoeglich: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoLeasingMoeglich
+            : "",
+        finanzierungMoeglich: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoFinanzierungMoeglich
+            : "",
+        inzahlungnahmeMoeglich: kategorie == "Auto & Motor" && !istVermietung()
+            ? autoInzahlungnahme
+            : "",
+        immobilienArt: kategorie == "Immobilien" ? immobilienArt : "",
+        wohnflaeche: kategorie == "Immobilien"
+            ? immobilienWohnflaecheController.text.trim()
+            : "",
+        zimmer:
+            kategorie == "Immobilien" ? immobilienZimmerController.text.trim() : "",
+        kaution: kategorie == "Immobilien"
+            ? immobilienKautionController.text.trim()
+            : "",
+        betriebskosten: kategorie == "Immobilien"
+            ? immobilienBetriebskostenController.text.trim()
+            : "",
+        etage: kategorie == "Immobilien"
+            ? immobilienEtageController.text.trim()
+            : "",
+        balkon: kategorie == "Immobilien" ? immobilienBalkon : "",
+        terrasse: kategorie == "Immobilien" ? immobilienTerrasse : "",
+        garten: kategorie == "Immobilien" ? immobilienGarten : "",
+        garage: kategorie == "Immobilien" ? immobilienGarage : "",
+        lift: kategorie == "Immobilien" ? immobilienLift : "",
+        keller: kategorie == "Immobilien" ? immobilienKeller : "",
+        moebliert: kategorie == "Immobilien" ? immobilienMoebliert : "",
+        energieklasse: kategorie == "Immobilien"
+            ? immobilienEnergieklasseController.text.trim()
+            : "",
+        heizung: kategorie == "Immobilien"
+            ? immobilienHeizungController.text.trim()
+            : "",
+        baujahrImmobilie: kategorie == "Immobilien"
+            ? immobilienBaujahrController.text.trim()
+            : "",
+        verfuegbarAb: kategorie == "Immobilien"
+            ? immobilienVerfuegbarAbController.text.trim()
+            : "",
+        zustand: (kategorie == "Jobs" ||
+                kategorie == "Dienstleistungen" ||
+                istVermietung())
+            ? ""
+            : zustand,
+        hersteller: (kategorie == "Jobs" ||
+                kategorie == "Dienstleistungen" ||
+                istVermietung())
+            ? ""
+            : herstellerController.text.trim(),
+        garantie: (kategorie == "Jobs" ||
+                kategorie == "Dienstleistungen" ||
+                istVermietung())
+            ? ""
+            : garantieController.text.trim(),
+        bootMarke: kategorie == "Boote" && !istVermietung()
+            ? bootMarkeController.text.trim()
+            : "",
+        bootModell: kategorie == "Boote" && !istVermietung()
+            ? bootModellController.text.trim()
+            : "",
+        bootBaujahr: kategorie == "Boote" && !istVermietung()
+            ? bootBaujahrController.text.trim()
+            : "",
+        bootLaenge: kategorie == "Boote" && !istVermietung()
+            ? bootLaengeController.text.trim()
+            : "",
+        bootLeistung: kategorie == "Boote" && !istVermietung()
+            ? bootLeistungController.text.trim()
+            : "",
+        bootstyp: kategorie == "Boote" && !istVermietung() ? bootstyp : "",
+        baumaschinenZustand: kategorie == "Baumaschinen" && !istVermietung()
+            ? baumaschinenZustandController.text.trim()
+            : "",
+        baumaschinenBaujahr: kategorie == "Baumaschinen" && !istVermietung()
+            ? baumaschinenBaujahrController.text.trim()
+            : "",
+        baumaschinenBetriebsstunden:
+            kategorie == "Baumaschinen" && !istVermietung()
+                ? baumaschinenBetriebsstundenController.text.trim()
+                : "",
+        baumaschinenGewicht: kategorie == "Baumaschinen" && !istVermietung()
+            ? baumaschinenGewichtController.text.trim()
+            : "",
+        baumarktHersteller: kategorie == "Baumarkt"
+            ? baumarktHerstellerController.text.trim()
+            : "",
+        baumarktMaterial: kategorie == "Baumarkt"
+            ? baumarktMaterialController.text.trim()
+            : "",
+        baumarktMenge:
+            kategorie == "Baumarkt" ? baumarktMengeController.text.trim() : "",
       );
 
-      final doc = await FirebaseFirestore.instance
-          .collection("inserate")
-          .add(produkt.toMap());
+      final produktMap = produkt.toMap();
+      produktMap["detailUnterkategorie"] = detailUnterkategorie;
+
+      if (kategorie == "Auto & Motor" && !istVermietung()) {
+        produktMap.addAll({
+          "autoErstzulassung": autoErstzulassungController.text.trim(),
+          "autoFarbe": autoFarbeController.text.trim(),
+          "autoTueren": autoTuerenController.text.trim(),
+          "autoSitze": autoSitzeController.text.trim(),
+          "autoPickerlBis": autoPickerlController.text.trim(),
+          "autoVorbesitzer": autoVorbesitzerController.text.trim(),
+          "autoKarosserie": autoKarosserieController.text.trim(),
+          "autoAntrieb": autoAntriebController.text.trim(),
+          "autoHubraum": autoHubraumController.text.trim(),
+          "autoVerbrauch": autoVerbrauchController.text.trim(),
+          "autoCo2": autoCo2Controller.text.trim(),
+          "autoSchluessel": autoSchluesselController.text.trim(),
+          "autoUnfallfrei": autoUnfallfrei,
+          "autoServicegepflegt": autoServicegepflegt,
+          "autoInzahlungnahme": autoInzahlungnahme,
+          "autoLeasingMoeglich": autoLeasingMoeglich,
+          "autoFinanzierungMoeglich": autoFinanzierungMoeglich,
+          "autoNichtraucher": autoNichtraucher,
+          "autoMwstAusweisbar": autoMwstAusweisbar,
+        });
+      }
+
+      if (kategorie == "Immobilien") {
+        produktMap.addAll({
+          "immobilienNutzflaeche": immobilienNutzflaecheController.text.trim(),
+          "immobilienGrundstueck": immobilienGrundstueckController.text.trim(),
+          "immobilienEtage": immobilienEtageController.text.trim(),
+          "immobilienHeizung": immobilienHeizungController.text.trim(),
+          "immobilienEnergieausweis": immobilienEnergieausweisController.text.trim(),
+          "immobilienProvision": immobilienProvisionController.text.trim(),
+          "immobilienVerfuegbarAb": immobilienVerfuegbarAbController.text.trim(),
+          "immobilienBaujahr": immobilienBaujahrController.text.trim(),
+          "immobilienEnergieklasse": immobilienEnergieklasseController.text.trim(),
+          "immobilienBalkon": immobilienBalkon,
+          "immobilienTerrasse": immobilienTerrasse,
+          "immobilienGarten": immobilienGarten,
+          "immobilienGarage": immobilienGarage,
+          "immobilienLift": immobilienLift,
+          "immobilienKeller": immobilienKeller,
+          "immobilienMoebliert": immobilienMoebliert,
+        });
+      }
+
+      produktMap["erstelltAm"] = FieldValue.serverTimestamp();
+
+      if (kategorie == "Jobs") {
+        produktMap.addAll({
+          "jobGehalt": jobGehaltController.text.trim(),
+          "jobArbeitsort": jobArbeitsortController.text.trim(),
+          "jobErfahrung": jobErfahrungController.text.trim(),
+          "jobBeschaeftigungsart": jobBeschaeftigungsart,
+          "jobHomeoffice": jobHomeoffice,
+          "jobFuehrerschein": jobFuehrerschein,
+        });
+      }
+
+      if (kategorie == "Dienstleistungen") {
+        produktMap.addAll({
+          "dienstleistungEinsatzgebiet":
+              dienstleistungEinsatzgebietController.text.trim(),
+          "dienstleistungPreisProStunde":
+              dienstleistungPreisController.text.trim(),
+          "dienstleistungOeffnungszeiten":
+              dienstleistungOeffnungszeitenController.text.trim(),
+          "dienstleistungAnfahrt": dienstleistungAnfahrt,
+          "dienstleistungNotdienst": dienstleistungNotdienst,
+        });
+      }
+
+      if (istVermietung()) {
+        produktMap.addAll({
+          "istVermietung": true,
+          "vermietungTagespreis": vermietungTagespreisController.text.trim(),
+          "vermietungWochenpreis": vermietungWochenpreisController.text.trim(),
+          "vermietungKaution": vermietungKautionController.text.trim(),
+          "vermietungMindestmietdauer":
+              vermietungMindestmietdauerController.text.trim(),
+          "vermietungUebergabeort": vermietungUebergabeortController.text.trim(),
+          "vermietungVerfuegbarkeit":
+              vermietungVerfuegbarkeitController.text.trim(),
+          "vermietungLieferungMoeglich": vermietungLieferungMoeglich,
+          "vermietungVersicherungInklusive": vermietungVersicherungInklusive,
+        });
+      } else {
+        produktMap["istVermietung"] = false;
+      }
+
+      final doc =
+          await FirebaseFirestore.instance.collection("inserate").add(produktMap);
 
       produkt.id = doc.id;
-
       widget.onSpeichern(produkt);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Inserat veröffentlicht."),
-          ),
+          const SnackBar(content: Text("Inserat veröffentlicht.")),
         );
       }
 
       formularLeeren();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Fehler: $e"),
-        ),
+        SnackBar(content: Text("Fehler: $e")),
       );
     }
 
-    setState(() {
-      wirdGespeichert = false;
-    });
+    if (mounted) {
+      setState(() {
+        wirdGespeichert = false;
+      });
+    }
   }
 
   void formularLeeren() {
@@ -502,68 +796,105 @@ class _InseratSeiteState extends State<InseratSeite> {
     firmennameController.clear();
     webseiteController.clear();
 
-    baujahrController.clear();
-    kilometerController.clear();
-    leistungController.clear();
-    erstzulassungController.clear();
-    vorbesitzerController.clear();
-    tuevController.clear();
-    hubraumController.clear();
-    verbrauchController.clear();
-    co2Controller.clear();
-    schluesselController.clear();
-
-    wohnflaecheController.clear();
-    zimmerController.clear();
-    etageController.clear();
-    kautionController.clear();
-    betriebskostenController.clear();
-    baujahrImmobilieController.clear();
-
     herstellerController.clear();
     garantieController.clear();
 
+    autoMarkeController.clear();
+    autoModellController.clear();
+    autoBaujahrController.clear();
+    autoKilometerController.clear();
+    autoLeistungController.clear();
+    autoErstzulassungController.clear();
+    autoFarbeController.clear();
+    autoTuerenController.clear();
+    autoSitzeController.clear();
+    autoPickerlController.clear();
+    autoVorbesitzerController.clear();
+    autoKarosserieController.clear();
+    autoAntriebController.clear();
+    autoHubraumController.clear();
+    autoVerbrauchController.clear();
+    autoCo2Controller.clear();
+    autoSchluesselController.clear();
+
+    immobilienWohnflaecheController.clear();
+    immobilienZimmerController.clear();
+    immobilienKautionController.clear();
+    immobilienBetriebskostenController.clear();
+    immobilienNutzflaecheController.clear();
+    immobilienGrundstueckController.clear();
+    immobilienEtageController.clear();
+    immobilienHeizungController.clear();
+    immobilienEnergieausweisController.clear();
+    immobilienProvisionController.clear();
+    immobilienVerfuegbarAbController.clear();
+    immobilienBaujahrController.clear();
+    immobilienEnergieklasseController.clear();
+
+    bootMarkeController.clear();
+    bootModellController.clear();
+    bootBaujahrController.clear();
+    bootLaengeController.clear();
+    bootLeistungController.clear();
+
+    baumaschinenZustandController.clear();
+    baumaschinenBaujahrController.clear();
+    baumaschinenBetriebsstundenController.clear();
+    baumaschinenGewichtController.clear();
+
+    baumarktHerstellerController.clear();
+    baumarktMaterialController.clear();
+    baumarktMengeController.clear();
+
+    jobGehaltController.clear();
+    jobArbeitsortController.clear();
+    jobErfahrungController.clear();
+
+    dienstleistungEinsatzgebietController.clear();
+    dienstleistungPreisController.clear();
+    dienstleistungOeffnungszeitenController.clear();
+
+    vermietungTagespreisController.clear();
+    vermietungWochenpreisController.clear();
+    vermietungKautionController.clear();
+    vermietungMindestmietdauerController.clear();
+    vermietungUebergabeortController.clear();
+    vermietungVerfuegbarkeitController.clear();
+
     setState(() {
       kategorie = "Marktplatz";
-      typ = "Privat";
-
-      ausgewaehlteMarke = "Audi";
-      ausgewaehltesModell = "A1";
-      ausgewaehlterKraftstoff = "Benzin";
-      ausgewaehltesGetriebe = "Automatik";
-      ausgewaehlterZustand = "Gebraucht";
-      ausgewaehlteFarbe = "Schwarz";
-      ausgewaehlteKarosserie = "Limousine";
-      ausgewaehlterAntrieb = "Frontantrieb";
-      ausgewaehlteUnfallfrei = "Ja";
-      ausgewaehlteTueren = "5";
-      ausgewaehlteSitze = "5";
-      ausgewaehlteServiceheft = "Ja";
-      ausgewaehlteNichtraucher = "Ja";
-      ausgewaehlteMwst = "Nein";
-      ausgewaehltesPickerlNeu = "Nein";
-      ausgewaehltesLeasing = "Nein";
-      ausgewaehlteFinanzierung = "Nein";
-      ausgewaehlteInzahlungnahme = "Nein";
-
-      ausgewaehlteImmobilienArt = "Wohnung mieten";
-      ausgewaehlterImmobilienZustand = "Gut";
-      ausgewaehlterBalkon = "Nein";
-      ausgewaehlteTerrasse = "Nein";
-      ausgewaehlterGarten = "Nein";
-      ausgewaehlteGarage = "Nein";
-      ausgewaehlterLift = "Nein";
-      ausgewaehlterKeller = "Nein";
-      ausgewaehltMoebliert = "Nein";
-      ausgewaehlteEnergieklasse = "A";
-      ausgewaehlteHeizung = "Fernwärme";
-      ausgewaehlteVerfuegbarkeit = "Sofort";
-
-      telefonSichtbar = false;
-      whatsappAktiv = false;
-      emailSichtbar = false;
+      unterkategorie = "";
+      detailUnterkategorie = "";
+      zustand = "Gebraucht";
+      autoKraftstoff = "Benzin";
+      autoGetriebe = "Automatik";
+      autoUnfallfrei = "Ja";
+      autoServicegepflegt = "Ja";
+      autoInzahlungnahme = "Nein";
+      autoLeasingMoeglich = "Nein";
+      autoFinanzierungMoeglich = "Nein";
+      autoNichtraucher = "Nein";
+      autoMwstAusweisbar = "Nein";
+      immobilienArt = "Wohnung mieten";
+      bootstyp = "Motorboot";
+      immobilienBalkon = "Nein";
+      immobilienTerrasse = "Nein";
+      immobilienGarten = "Nein";
+      immobilienGarage = "Nein";
+      immobilienLift = "Nein";
+      immobilienKeller = "Nein";
+      immobilienMoebliert = "Nein";
+      jobBeschaeftigungsart = "Vollzeit";
+      jobHomeoffice = "Nein";
+      jobFuehrerschein = "Nein";
+      dienstleistungAnfahrt = "Ja";
+      dienstleistungNotdienst = "Nein";
+      vermietungLieferungMoeglich = "Nein";
+      vermietungVersicherungInklusive = "Nein";
       bilderBytes.clear();
     });
+
+    kontoTypLaden();
   }
 
   @override
@@ -578,28 +909,126 @@ class _InseratSeiteState extends State<InseratSeite> {
     firmennameController.dispose();
     webseiteController.dispose();
 
-    baujahrController.dispose();
-    kilometerController.dispose();
-    leistungController.dispose();
-    erstzulassungController.dispose();
-    vorbesitzerController.dispose();
-    tuevController.dispose();
-    hubraumController.dispose();
-    verbrauchController.dispose();
-    co2Controller.dispose();
-    schluesselController.dispose();
-
-    wohnflaecheController.dispose();
-    zimmerController.dispose();
-    etageController.dispose();
-    kautionController.dispose();
-    betriebskostenController.dispose();
-    baujahrImmobilieController.dispose();
-
     herstellerController.dispose();
     garantieController.dispose();
 
+    autoMarkeController.dispose();
+    autoModellController.dispose();
+    autoBaujahrController.dispose();
+    autoKilometerController.dispose();
+    autoLeistungController.dispose();
+    autoErstzulassungController.dispose();
+    autoFarbeController.dispose();
+    autoTuerenController.dispose();
+    autoSitzeController.dispose();
+    autoPickerlController.dispose();
+    autoVorbesitzerController.dispose();
+    autoKarosserieController.dispose();
+    autoAntriebController.dispose();
+    autoHubraumController.dispose();
+    autoVerbrauchController.dispose();
+    autoCo2Controller.dispose();
+    autoSchluesselController.dispose();
+
+    immobilienWohnflaecheController.dispose();
+    immobilienZimmerController.dispose();
+    immobilienKautionController.dispose();
+    immobilienBetriebskostenController.dispose();
+    immobilienNutzflaecheController.dispose();
+    immobilienGrundstueckController.dispose();
+    immobilienEtageController.dispose();
+    immobilienHeizungController.dispose();
+    immobilienEnergieausweisController.dispose();
+    immobilienProvisionController.dispose();
+    immobilienVerfuegbarAbController.dispose();
+    immobilienBaujahrController.dispose();
+    immobilienEnergieklasseController.dispose();
+
+    bootMarkeController.dispose();
+    bootModellController.dispose();
+    bootBaujahrController.dispose();
+    bootLaengeController.dispose();
+    bootLeistungController.dispose();
+
+    baumaschinenZustandController.dispose();
+    baumaschinenBaujahrController.dispose();
+    baumaschinenBetriebsstundenController.dispose();
+    baumaschinenGewichtController.dispose();
+
+    baumarktHerstellerController.dispose();
+    baumarktMaterialController.dispose();
+    baumarktMengeController.dispose();
+
+    jobGehaltController.dispose();
+    jobArbeitsortController.dispose();
+    jobErfahrungController.dispose();
+
+    dienstleistungEinsatzgebietController.dispose();
+    dienstleistungPreisController.dispose();
+    dienstleistungOeffnungszeitenController.dispose();
+
+    vermietungTagespreisController.dispose();
+    vermietungWochenpreisController.dispose();
+    vermietungKautionController.dispose();
+    vermietungMindestmietdauerController.dispose();
+    vermietungUebergabeortController.dispose();
+    vermietungVerfuegbarkeitController.dispose();
+
     super.dispose();
+  }
+
+  Widget _unterkategorieDropdown() {
+    final unterkategorien = kdaten.unterkategorienFuer(kategorie);
+
+    if (unterkategorien.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final aktuellerWert =
+        unterkategorien.contains(unterkategorie) ? unterkategorie : unterkategorien.first;
+
+    return InseratDropdown(
+      label: "Unterkategorie",
+      value: aktuellerWert,
+      items: unterkategorien,
+      onChanged: (value) {
+        setState(() {
+          unterkategorie = value!;
+          detailUnterkategorie = "";
+        });
+      },
+    );
+  }
+
+  Widget _detailUnterkategorieDropdown() {
+    final aktuelleUnterkategorie = unterkategorie.isEmpty
+        ? (kdaten.unterkategorienFuer(kategorie).isEmpty
+            ? ""
+            : kdaten.unterkategorienFuer(kategorie).first)
+        : unterkategorie;
+
+    final details = kdaten.detailUnterkategorienFuer(
+      kategorie,
+      aktuelleUnterkategorie,
+    );
+
+    if (details.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final aktuellerWert =
+        details.contains(detailUnterkategorie) ? detailUnterkategorie : details.first;
+
+    return InseratDropdown(
+      label: "Detail-Unterkategorie",
+      value: aktuellerWert,
+      items: details,
+      onChanged: (value) {
+        setState(() {
+          detailUnterkategorie = value!;
+        });
+      },
+    );
   }
 
   @override
@@ -617,68 +1046,114 @@ class _InseratSeiteState extends State<InseratSeite> {
             24,
           ),
           children: [
-            const Text(
-              "Inserat erstellen",
-              style: TextStyle(
-                color: Color(0xff050b2c),
-                fontSize: 28,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
+            _kopfbereich(),
             const SizedBox(height: 18),
-            _karte(
-              child: Column(
-                children: [
-                  _dropdown(
-                    label: "Verkäufertyp",
-                    value: typ,
-                    items: const ["Privat", "Firma"],
-                    onChanged: (value) {
-                      if (value != null) typGeaendert(value);
-                    },
-                  ),
-                  if (typ == "Firma") ...[
-                    _feld(firmennameController, "Firmenname"),
-                    _feld(webseiteController, "Webseite"),
-                  ],
-                ],
-              ),
-            ),
+            _bilderBereich(),
             const SizedBox(height: 16),
-            _karte(
+            if (typ.isEmpty)
+              InseratKarte(
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xff5b2cff),
+                  ),
+                ),
+              ),
+            if (typ == "Firma")
+              InseratKarte(
+                titel: "Firmenangaben",
+                child: Column(
+                  children: [
+                    InseratFeld(
+                      controller: firmennameController,
+                      label: "Firmenname",
+                    ),
+                    InseratFeld(
+                      controller: webseiteController,
+                      label: "Webseite",
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6),
+                      child: Text(
+                        "Dieses Inserat wird automatisch als Firmeninserat veröffentlicht.",
+                        style: TextStyle(
+                          color: Color(0xff74788d),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (typ == "Privat")
+              InseratKarte(
+                child: const Row(
+                  children: [
+                    Icon(Icons.person_outline, color: Color(0xff5b2cff)),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        "Dieses Inserat wird automatisch als Privatinserat veröffentlicht.",
+                        style: TextStyle(
+                          color: Color(0xff050b2c),
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 16),
+            InseratKarte(
+              titel: "Grunddaten",
               child: Column(
                 children: [
-                  _feld(titelController, "Titel"),
-                  _feld(preisController, "Preis"),
-                  _feld(ortController, "Ort"),
-                  _feld(adresseController, "Adresse"),
-                  _dropdown(
+                  InseratFeld(controller: titelController, label: "Titel"),
+                  InseratFeld(controller: preisController, label: "Preis"),
+                  InseratFeld(controller: ortController, label: "Ort"),
+                  InseratFeld(controller: adresseController, label: "Adresse"),
+                  InseratDropdown(
                     label: "Kategorie",
                     value: kategorie,
-                    items: kategorien,
+                    items: kdaten.startKategorien.where((e) => e != "Alle").toList(),
                     onChanged: (value) {
                       setState(() {
                         kategorie = value!;
+                        unterkategorie = "";
+                        detailUnterkategorie = "";
                       });
                     },
                   ),
-                  _feld(
-                    beschreibungController,
-                    "Beschreibung",
+                  _unterkategorieDropdown(),
+                  _detailUnterkategorieDropdown(),
+                  InseratFeld(
+                    controller: beschreibungController,
+                    label: "Beschreibung",
                     maxLines: 5,
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            if (kategorie == "Autos") _autoFelder(),
-            if (kategorie == "Immobilien") _immobilienFelder(),
-            if (kategorie != "Autos" && kategorie != "Immobilien")
+            if (istVermietung()) _vermietungFelder(),
+            if (!istVermietung() && kategorie == "Auto & Motor") _autoFelder(),
+            if (!istVermietung() && kategorie == "Immobilien") _immobilienFelder(),
+            if (!istVermietung() && kategorie == "Boote") _booteFelder(),
+            if (!istVermietung() && kategorie == "Baumaschinen")
+              _baumaschinenFelder(),
+            if (!istVermietung() && kategorie == "Baumarkt") _baumarktFelder(),
+            if (kategorie == "Jobs") _jobsFelder(),
+            if (kategorie == "Dienstleistungen") _dienstleistungenFelder(),
+            if (!istVermietung() &&
+                kategorie != "Auto & Motor" &&
+                kategorie != "Immobilien" &&
+                kategorie != "Boote" &&
+                kategorie != "Baumaschinen" &&
+                kategorie != "Baumarkt" &&
+                kategorie != "Jobs" &&
+                kategorie != "Dienstleistungen")
               _produktFelder(),
             const SizedBox(height: 16),
             _kontaktFelder(),
-            const SizedBox(height: 16),
-            _bilderBereich(),
             const SizedBox(height: 20),
             SizedBox(
               height: 56,
@@ -691,9 +1166,7 @@ class _InseratSeiteState extends State<InseratSeite> {
                 ),
                 onPressed: wirdGespeichert ? null : speichern,
                 child: Text(
-                  wirdGespeichert
-                      ? "Wird gespeichert..."
-                      : "Inserat veröffentlichen",
+                  wirdGespeichert ? "Wird gespeichert..." : "Inserat veröffentlichen",
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -708,346 +1181,474 @@ class _InseratSeiteState extends State<InseratSeite> {
     );
   }
 
+  Widget _kopfbereich() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xff050b2c),
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x18000000),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xff5b2cff), Color(0xff7a5cff)],
+              ),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Icon(
+              Icons.add_business_outlined,
+              color: Colors.white,
+              size: 29,
+            ),
+          ),
+          const SizedBox(width: 13),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Inserat erstellen",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    height: 1.05,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  "Fotos zuerst, danach Daten ausfüllen und veröffentlichen.",
+                  style: TextStyle(
+                    color: Color(0xffb9a8ff),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _autoFelder() {
-    final modelle = autoModelle[ausgewaehlteMarke] ?? ["Andere"];
-
-    if (!modelle.contains(ausgewaehltesModell)) {
-      ausgewaehltesModell = modelle.first;
-    }
-
-    return _karte(
-      titel: "Fahrzeugdaten",
+    return InseratKarte(
+      titel: "Auto verkaufen Details",
       child: Column(
         children: [
-          _dropdown(
-            label: "Marke",
-            value: ausgewaehlteMarke,
-            items: autoMarken,
-            onChanged: (value) {
-              setState(() {
-                ausgewaehlteMarke = value!;
-                final neueModelle =
-                    autoModelle[ausgewaehlteMarke] ?? ["Andere"];
-                ausgewaehltesModell = neueModelle.first;
-              });
-            },
+          InseratFeld(controller: autoMarkeController, label: "Marke"),
+          InseratFeld(controller: autoModellController, label: "Modell"),
+          InseratFeld(controller: autoBaujahrController, label: "Baujahr"),
+          InseratFeld(
+            controller: autoErstzulassungController,
+            label: "Erstzulassung",
           ),
-          _dropdown(
-            label: "Modell",
-            value: ausgewaehltesModell,
-            items: modelle,
-            onChanged: (value) {
-              setState(() {
-                ausgewaehltesModell = value!;
-              });
-            },
-          ),
-          _feld(baujahrController, "Baujahr"),
-          _feld(erstzulassungController, "Erstzulassung z.B. 03/2022"),
-          _feld(kilometerController, "Kilometerstand"),
-          _dropdown(
+          InseratFeld(controller: autoKilometerController, label: "Kilometerstand"),
+          InseratFeld(controller: autoLeistungController, label: "Leistung PS"),
+          InseratFeld(controller: autoFarbeController, label: "Farbe"),
+          InseratFeld(controller: autoTuerenController, label: "Türen"),
+          InseratFeld(controller: autoSitzeController, label: "Sitze"),
+          InseratFeld(controller: autoPickerlController, label: "Pickerl gültig bis"),
+          InseratFeld(controller: autoVorbesitzerController, label: "Vorbesitzer"),
+          InseratFeld(controller: autoKarosserieController, label: "Karosserie"),
+          InseratFeld(controller: autoAntriebController, label: "Antrieb"),
+          InseratFeld(controller: autoHubraumController, label: "Hubraum ccm"),
+          InseratFeld(controller: autoVerbrauchController, label: "Verbrauch l/100 km"),
+          InseratFeld(controller: autoCo2Controller, label: "CO₂ g/km"),
+          InseratFeld(controller: autoSchluesselController, label: "Schlüsselanzahl"),
+          InseratDropdown(
             label: "Kraftstoff",
-            value: ausgewaehlterKraftstoff,
+            value: autoKraftstoff,
             items: kraftstoffe,
             onChanged: (value) {
               setState(() {
-                ausgewaehlterKraftstoff = value!;
+                autoKraftstoff = value!;
               });
             },
           ),
-          _dropdown(
+          InseratDropdown(
             label: "Getriebe",
-            value: ausgewaehltesGetriebe,
+            value: autoGetriebe,
             items: getriebeArten,
             onChanged: (value) {
               setState(() {
-                ausgewaehltesGetriebe = value!;
+                autoGetriebe = value!;
               });
             },
           ),
-          _feld(leistungController, "Leistung / PS"),
-          _feld(hubraumController, "Hubraum cm³"),
-          _feld(verbrauchController, "Verbrauch l/100km"),
-          _feld(co2Controller, "CO₂ Emission"),
-          _feld(schluesselController, "Anzahl Schlüssel"),
-          _dropdown(
-            label: "Karosserie",
-            value: ausgewaehlteKarosserie,
-            items: karosserien,
-            onChanged: (value) {
-              setState(() {
-                ausgewaehlteKarosserie = value!;
-              });
-            },
-          ),
-          _dropdown(
-            label: "Farbe",
-            value: ausgewaehlteFarbe,
-            items: farben,
-            onChanged: (value) {
-              setState(() {
-                ausgewaehlteFarbe = value!;
-              });
-            },
-          ),
-          _dropdown(
-            label: "Antrieb",
-            value: ausgewaehlterAntrieb,
-            items: antriebe,
-            onChanged: (value) {
-              setState(() {
-                ausgewaehlterAntrieb = value!;
-              });
-            },
-          ),
-          _feld(vorbesitzerController, "Vorbesitzer"),
-          _feld(tuevController, "Pickerl / TÜV bis"),
-          _dropdown(
-            label: "Pickerl neu",
-            value: ausgewaehltesPickerlNeu,
-            items: jaNein,
-            onChanged: (value) {
-              setState(() {
-                ausgewaehltesPickerlNeu = value!;
-              });
-            },
-          ),
-          _dropdown(
+          InseratDropdown(
             label: "Unfallfrei",
-            value: ausgewaehlteUnfallfrei,
-            items: jaNein,
+            value: autoUnfallfrei,
+            items: const ["Ja", "Nein"],
             onChanged: (value) {
               setState(() {
-                ausgewaehlteUnfallfrei = value!;
+                autoUnfallfrei = value!;
               });
             },
           ),
-          _dropdown(
-            label: "Türen",
-            value: ausgewaehlteTueren,
-            items: tuerenListe,
+          InseratDropdown(
+            label: "Servicegepflegt",
+            value: autoServicegepflegt,
+            items: const ["Ja", "Nein"],
             onChanged: (value) {
               setState(() {
-                ausgewaehlteTueren = value!;
+                autoServicegepflegt = value!;
               });
             },
           ),
-          _dropdown(
-            label: "Sitze",
-            value: ausgewaehlteSitze,
-            items: sitzeListe,
+          InseratDropdown(
+            label: "Inzahlungnahme möglich",
+            value: autoInzahlungnahme,
+            items: const ["Ja", "Nein"],
             onChanged: (value) {
               setState(() {
-                ausgewaehlteSitze = value!;
+                autoInzahlungnahme = value!;
               });
             },
           ),
-          _dropdown(
-            label: "Serviceheft gepflegt",
-            value: ausgewaehlteServiceheft,
-            items: jaNein,
+          InseratDropdown(
+            label: "Leasing möglich",
+            value: autoLeasingMoeglich,
+            items: const ["Ja", "Nein"],
             onChanged: (value) {
               setState(() {
-                ausgewaehlteServiceheft = value!;
+                autoLeasingMoeglich = value!;
               });
             },
           ),
-          _dropdown(
+          InseratDropdown(
+            label: "Finanzierung möglich",
+            value: autoFinanzierungMoeglich,
+            items: const ["Ja", "Nein"],
+            onChanged: (value) {
+              setState(() {
+                autoFinanzierungMoeglich = value!;
+              });
+            },
+          ),
+          InseratDropdown(
             label: "Nichtraucherfahrzeug",
-            value: ausgewaehlteNichtraucher,
-            items: jaNein,
+            value: autoNichtraucher,
+            items: const ["Ja", "Nein"],
             onChanged: (value) {
               setState(() {
-                ausgewaehlteNichtraucher = value!;
+                autoNichtraucher = value!;
               });
             },
           ),
-          _dropdown(
+          InseratDropdown(
             label: "MwSt. ausweisbar",
-            value: ausgewaehlteMwst,
-            items: jaNein,
+            value: autoMwstAusweisbar,
+            items: const ["Ja", "Nein"],
             onChanged: (value) {
               setState(() {
-                ausgewaehlteMwst = value!;
+                autoMwstAusweisbar = value!;
               });
             },
           ),
-          if (typ == "Firma") ...[
-            _dropdown(
-              label: "Leasing möglich",
-              value: ausgewaehltesLeasing,
-              items: jaNein,
-              onChanged: (value) {
-                setState(() {
-                  ausgewaehltesLeasing = value!;
-                });
-              },
-            ),
-            _dropdown(
-              label: "Finanzierung möglich",
-              value: ausgewaehlteFinanzierung,
-              items: jaNein,
-              onChanged: (value) {
-                setState(() {
-                  ausgewaehlteFinanzierung = value!;
-                });
-              },
-            ),
-            _dropdown(
-              label: "Inzahlungnahme möglich",
-              value: ausgewaehlteInzahlungnahme,
-              items: jaNein,
-              onChanged: (value) {
-                setState(() {
-                  ausgewaehlteInzahlungnahme = value!;
-                });
-              },
-            ),
-          ],
-          _dropdown(
-            label: "Zustand",
-            value: ausgewaehlterZustand,
-            items: zustaende,
-            onChanged: (value) {
-              setState(() {
-                ausgewaehlterZustand = value!;
-              });
-            },
-          ),
-          _feld(garantieController, "Garantie"),
         ],
       ),
     );
   }
 
   Widget _immobilienFelder() {
-    return _karte(
+    return InseratKarte(
       titel: "Immobilien Details",
       child: Column(
         children: [
-          _dropdown(
+          InseratDropdown(
             label: "Immobilienart",
-            value: ausgewaehlteImmobilienArt,
+            value: immobilienArt,
             items: immobilienArten,
             onChanged: (value) {
               setState(() {
-                ausgewaehlteImmobilienArt = value!;
+                immobilienArt = value!;
               });
             },
           ),
-          _feld(wohnflaecheController, "Wohnfläche m²"),
-          _feld(zimmerController, "Zimmer"),
-          _feld(etageController, "Etage"),
-          _feld(kautionController, "Kaution"),
-          _feld(betriebskostenController, "Betriebskosten"),
-          _feld(baujahrImmobilieController, "Baujahr"),
-          _dropdown(
-            label: "Balkon",
-            value: ausgewaehlterBalkon,
-            items: jaNeinImmobilien,
-            onChanged: (value) {
-              setState(() {
-                ausgewaehlterBalkon = value!;
-              });
-            },
+          InseratFeld(
+            controller: immobilienWohnflaecheController,
+            label: "Wohnfläche m²",
           ),
-          _dropdown(
-            label: "Terrasse",
-            value: ausgewaehlteTerrasse,
-            items: jaNeinImmobilien,
-            onChanged: (value) {
-              setState(() {
-                ausgewaehlteTerrasse = value!;
-              });
-            },
+          InseratFeld(
+            controller: immobilienNutzflaecheController,
+            label: "Nutzfläche m²",
           ),
-          _dropdown(
-            label: "Garten",
-            value: ausgewaehlterGarten,
-            items: jaNeinImmobilien,
-            onChanged: (value) {
-              setState(() {
-                ausgewaehlterGarten = value!;
-              });
-            },
+          InseratFeld(
+            controller: immobilienGrundstueckController,
+            label: "Grundstücksfläche m²",
           ),
-          _dropdown(
-            label: "Garage/Stellplatz",
-            value: ausgewaehlteGarage,
-            items: jaNeinImmobilien,
-            onChanged: (value) {
-              setState(() {
-                ausgewaehlteGarage = value!;
-              });
-            },
+          InseratFeld(controller: immobilienZimmerController, label: "Zimmer"),
+          InseratFeld(controller: immobilienEtageController, label: "Etage"),
+          InseratFeld(controller: immobilienKautionController, label: "Kaution"),
+          InseratFeld(
+            controller: immobilienBetriebskostenController,
+            label: "Betriebskosten",
           ),
-          _dropdown(
-            label: "Lift",
-            value: ausgewaehlterLift,
-            items: jaNeinImmobilien,
-            onChanged: (value) {
-              setState(() {
-                ausgewaehlterLift = value!;
-              });
-            },
+          InseratFeld(controller: immobilienHeizungController, label: "Heizung"),
+          InseratFeld(
+            controller: immobilienEnergieausweisController,
+            label: "Energieausweis",
           ),
-          _dropdown(
-            label: "Keller",
-            value: ausgewaehlterKeller,
-            items: jaNeinImmobilien,
-            onChanged: (value) {
-              setState(() {
-                ausgewaehlterKeller = value!;
-              });
-            },
+          InseratFeld(controller: immobilienProvisionController, label: "Provision"),
+          InseratFeld(
+            controller: immobilienVerfuegbarAbController,
+            label: "Verfügbar ab",
           ),
-          _dropdown(
-            label: "Möbliert",
-            value: ausgewaehltMoebliert,
-            items: jaNeinImmobilien,
-            onChanged: (value) {
-              setState(() {
-                ausgewaehltMoebliert = value!;
-              });
-            },
+          InseratFeld(
+            controller: immobilienBaujahrController,
+            label: "Baujahr Immobilie",
           ),
-          _dropdown(
+          InseratFeld(
+            controller: immobilienEnergieklasseController,
             label: "Energieklasse",
-            value: ausgewaehlteEnergieklasse,
-            items: energieklassen,
+          ),
+          InseratDropdown(
+            label: "Balkon",
+            value: immobilienBalkon,
+            items: const ["Ja", "Nein"],
             onChanged: (value) {
               setState(() {
-                ausgewaehlteEnergieklasse = value!;
+                immobilienBalkon = value!;
               });
             },
           ),
-          _dropdown(
-            label: "Heizung",
-            value: ausgewaehlteHeizung,
-            items: heizungsarten,
+          InseratDropdown(
+            label: "Terrasse",
+            value: immobilienTerrasse,
+            items: const ["Ja", "Nein"],
             onChanged: (value) {
               setState(() {
-                ausgewaehlteHeizung = value!;
+                immobilienTerrasse = value!;
               });
             },
           ),
-          _dropdown(
-            label: "Verfügbarkeit",
-            value: ausgewaehlteVerfuegbarkeit,
-            items: verfuegbarkeit,
+          InseratDropdown(
+            label: "Garten",
+            value: immobilienGarten,
+            items: const ["Ja", "Nein"],
             onChanged: (value) {
               setState(() {
-                ausgewaehlteVerfuegbarkeit = value!;
+                immobilienGarten = value!;
               });
             },
           ),
-          _dropdown(
+          InseratDropdown(
+            label: "Garage/Parkplatz",
+            value: immobilienGarage,
+            items: const ["Ja", "Nein"],
+            onChanged: (value) {
+              setState(() {
+                immobilienGarage = value!;
+              });
+            },
+          ),
+          InseratDropdown(
+            label: "Lift",
+            value: immobilienLift,
+            items: const ["Ja", "Nein"],
+            onChanged: (value) {
+              setState(() {
+                immobilienLift = value!;
+              });
+            },
+          ),
+          InseratDropdown(
+            label: "Keller",
+            value: immobilienKeller,
+            items: const ["Ja", "Nein"],
+            onChanged: (value) {
+              setState(() {
+                immobilienKeller = value!;
+              });
+            },
+          ),
+          InseratDropdown(
+            label: "Möbliert",
+            value: immobilienMoebliert,
+            items: const ["Ja", "Nein"],
+            onChanged: (value) {
+              setState(() {
+                immobilienMoebliert = value!;
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _booteFelder() {
+    return InseratKarte(
+      titel: "Boot Details",
+      child: Column(
+        children: [
+          InseratDropdown(
+            label: "Bootstyp",
+            value: bootstyp,
+            items: bootstypen,
+            onChanged: (value) {
+              setState(() {
+                bootstyp = value!;
+              });
+            },
+          ),
+          InseratFeld(controller: bootMarkeController, label: "Marke"),
+          InseratFeld(controller: bootModellController, label: "Modell"),
+          InseratFeld(controller: bootBaujahrController, label: "Baujahr"),
+          InseratFeld(controller: bootLaengeController, label: "Länge"),
+          InseratFeld(controller: bootLeistungController, label: "Leistung PS"),
+        ],
+      ),
+    );
+  }
+
+  Widget _baumaschinenFelder() {
+    return InseratKarte(
+      titel: "Baumaschinen Details",
+      child: Column(
+        children: [
+          InseratFeld(
+            controller: baumaschinenZustandController,
             label: "Zustand",
-            value: ausgewaehlterImmobilienZustand,
-            items: immobilienZustaende,
+          ),
+          InseratFeld(
+            controller: baumaschinenBaujahrController,
+            label: "Baujahr",
+          ),
+          InseratFeld(
+            controller: baumaschinenBetriebsstundenController,
+            label: "Betriebsstunden",
+          ),
+          InseratFeld(
+            controller: baumaschinenGewichtController,
+            label: "Gewicht",
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _baumarktFelder() {
+    return InseratKarte(
+      titel: "Baumarkt Details",
+      child: Column(
+        children: [
+          InseratFeld(
+            controller: baumarktHerstellerController,
+            label: "Hersteller",
+          ),
+          InseratFeld(controller: baumarktMaterialController, label: "Material"),
+          InseratFeld(controller: baumarktMengeController, label: "Menge"),
+        ],
+      ),
+    );
+  }
+
+  Widget _jobsFelder() {
+    return JobsFelder(
+      gehaltController: jobGehaltController,
+      arbeitsortController: jobArbeitsortController,
+      erfahrungController: jobErfahrungController,
+      beschaeftigungsart: jobBeschaeftigungsart,
+      homeoffice: jobHomeoffice,
+      fuehrerschein: jobFuehrerschein,
+      onBeschaeftigungsart: (value) {
+        setState(() {
+          jobBeschaeftigungsart = value!;
+        });
+      },
+      onHomeoffice: (value) {
+        setState(() {
+          jobHomeoffice = value!;
+        });
+      },
+      onFuehrerschein: (value) {
+        setState(() {
+          jobFuehrerschein = value!;
+        });
+      },
+    );
+  }
+
+  Widget _dienstleistungenFelder() {
+    return DienstleistungenFelder(
+      einsatzgebietController: dienstleistungEinsatzgebietController,
+      preisController: dienstleistungPreisController,
+      oeffnungszeitenController: dienstleistungOeffnungszeitenController,
+      anfahrt: dienstleistungAnfahrt,
+      notdienst: dienstleistungNotdienst,
+      onAnfahrt: (value) {
+        setState(() {
+          dienstleistungAnfahrt = value!;
+        });
+      },
+      onNotdienst: (value) {
+        setState(() {
+          dienstleistungNotdienst = value!;
+        });
+      },
+    );
+  }
+
+  Widget _vermietungFelder() {
+    return InseratKarte(
+      titel: "Vermietung Details",
+      child: Column(
+        children: [
+          InseratFeld(
+            controller: vermietungTagespreisController,
+            label: "Tagespreis",
+          ),
+          InseratFeld(
+            controller: vermietungWochenpreisController,
+            label: "Wochenpreis",
+          ),
+          InseratFeld(
+            controller: vermietungKautionController,
+            label: "Kaution",
+          ),
+          InseratFeld(
+            controller: vermietungMindestmietdauerController,
+            label: "Mindestmietdauer",
+          ),
+          InseratFeld(
+            controller: vermietungUebergabeortController,
+            label: "Übergabeort",
+          ),
+          InseratFeld(
+            controller: vermietungVerfuegbarkeitController,
+            label: "Verfügbarkeit",
+          ),
+          InseratDropdown(
+            label: "Lieferung möglich",
+            value: vermietungLieferungMoeglich,
+            items: const ["Ja", "Nein"],
             onChanged: (value) {
               setState(() {
-                ausgewaehlterImmobilienZustand = value!;
+                vermietungLieferungMoeglich = value!;
+              });
+            },
+          ),
+          InseratDropdown(
+            label: "Versicherung inklusive",
+            value: vermietungVersicherungInklusive,
+            items: const ["Ja", "Nein"],
+            onChanged: (value) {
+              setState(() {
+                vermietungVersicherungInklusive = value!;
               });
             },
           ),
@@ -1057,33 +1658,33 @@ class _InseratSeiteState extends State<InseratSeite> {
   }
 
   Widget _produktFelder() {
-    return _karte(
+    return InseratKarte(
       titel: "Produktdetails",
       child: Column(
         children: [
-          _dropdown(
+          InseratDropdown(
             label: "Zustand",
-            value: ausgewaehlterZustand,
+            value: zustand,
             items: zustaende,
             onChanged: (value) {
               setState(() {
-                ausgewaehlterZustand = value!;
+                zustand = value!;
               });
             },
           ),
-          _feld(herstellerController, "Hersteller"),
-          _feld(garantieController, "Garantie"),
+          InseratFeld(controller: herstellerController, label: "Hersteller"),
+          InseratFeld(controller: garantieController, label: "Garantie"),
         ],
       ),
     );
   }
 
   Widget _kontaktFelder() {
-    return _karte(
+    return InseratKarte(
       titel: "Kontakt",
       child: Column(
         children: [
-          _feld(telefonController, "Telefonnummer"),
+          InseratFeld(controller: telefonController, label: "Telefonnummer"),
           if (typ == "Privat") ...[
             SwitchListTile(
               value: telefonSichtbar,
@@ -1117,9 +1718,7 @@ class _InseratSeiteState extends State<InseratSeite> {
               padding: EdgeInsets.only(top: 8),
               child: Text(
                 "Bei Firmen werden Telefon, WhatsApp und E-Mail automatisch angezeigt.",
-                style: TextStyle(
-                  color: Color(0xff74788d),
-                ),
+                style: TextStyle(color: Color(0xff74788d)),
               ),
             ),
         ],
@@ -1128,129 +1727,194 @@ class _InseratSeiteState extends State<InseratSeite> {
   }
 
   Widget _bilderBereich() {
-    return _karte(
-      titel: "Bilder",
-      child: Column(
-        children: [
-          OutlinedButton.icon(
-            onPressed: bilderAuswaehlen,
-            icon: const Icon(Icons.image_outlined),
-            label: const Text("Bilder auswählen"),
-          ),
-          if (bilderBytes.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 105,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: bilderBytes.length,
-                itemBuilder: (context, index) {
-                  return Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    width: 105,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: Image.memory(
-                        bilderBytes[index],
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
+    const maxBilder = 30;
+    final hatBilder = bilderBytes.isNotEmpty;
+    final rest = maxBilder - bilderBytes.length;
 
-  Widget _karte({
-    String? titel,
-    required Widget child,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: const Color(0xffececf4),
-        ),
-      ),
+    return InseratKarte(
+      titel: "Fotos",
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (titel != null) ...[
-            Text(
-              titel,
-              style: const TextStyle(
-                color: Color(0xff050b2c),
-                fontSize: 19,
-                fontWeight: FontWeight.w900,
+          InkWell(
+            borderRadius: BorderRadius.circular(22),
+            onTap: bilderAuswaehlen,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: const Color(0xfff1edff),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: const Color(0xff5b2cff).withOpacity(0.22),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 62,
+                    height: 62,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: const Icon(
+                      Icons.add_photo_alternate_outlined,
+                      color: Color(0xff5b2cff),
+                      size: 34,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    hatBilder ? "Weitere Fotos hinzufügen" : "Fotos hinzufügen",
+                    style: const TextStyle(
+                      color: Color(0xff050b2c),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    "${bilderBytes.length}/$maxBilder Bilder ausgewählt · erstes Bild ist Titelbild",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xff74788d),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
             ),
+          ),
+          if (hatBilder) ...[
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                const Icon(
+                  Icons.image_outlined,
+                  color: Color(0xff5b2cff),
+                  size: 19,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    rest == 0
+                        ? "Maximum erreicht"
+                        : "Noch $rest Bilder möglich",
+                    style: const TextStyle(
+                      color: Color(0xff050b2c),
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final breite = constraints.maxWidth;
+                final spalten = breite > 760 ? 6 : (breite > 520 ? 4 : 3);
+                final itemBreite = (breite - ((spalten - 1) * 9)) / spalten;
+
+                return Wrap(
+                  spacing: 9,
+                  runSpacing: 9,
+                  children: [
+                    for (int index = 0; index < bilderBytes.length; index++)
+                      SizedBox(
+                        width: itemBreite,
+                        height: index == 0 ? itemBreite * 1.15 : itemBreite,
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Image.memory(
+                                  bilderBytes[index],
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                            if (index == 0)
+                              Positioned(
+                                left: 7,
+                                bottom: 7,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xff5b2cff),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Text(
+                                    "Titelbild",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else
+                              Positioned(
+                                left: 7,
+                                bottom: 7,
+                                child: InkWell(
+                                  onTap: () => bildAlsTitelbildSetzen(index),
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.62),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: const Text(
+                                      "Als Titel",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            Positioned(
+                              right: 6,
+                              top: 6,
+                              child: InkWell(
+                                onTap: () => bildEntfernen(index),
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.62),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                    size: 17,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
           ],
-          child,
         ],
-      ),
-    );
-  }
-
-  Widget _feld(
-    TextEditingController controller,
-    String label, {
-    int maxLines = 1,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
-        controller: controller,
-        maxLines: maxLines,
-        decoration: InputDecoration(
-          labelText: label,
-          filled: true,
-          fillColor: const Color(0xfff7f7fb),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide.none,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _dropdown({
-    required String label,
-    required String value,
-    required List<String> items,
-    required Function(String?) onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: DropdownButtonFormField<String>(
-        value: items.contains(value) ? value : items.first,
-        isExpanded: true,
-        decoration: InputDecoration(
-          labelText: label,
-          filled: true,
-          fillColor: const Color(0xfff7f7fb),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide.none,
-          ),
-        ),
-        items: items
-            .map(
-              (item) => DropdownMenuItem(
-                value: item,
-                child: Text(item),
-              ),
-            )
-            .toList(),
-        onChanged: onChanged,
       ),
     );
   }

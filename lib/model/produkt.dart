@@ -9,6 +9,8 @@ class Produkt {
   String ort;
   String adresse;
   String kategorie;
+  String unterkategorie;
+  String detailUnterkategorie;
   String typ;
   String beschreibung;
 
@@ -26,6 +28,8 @@ class Produkt {
   String firmenname;
   String webseite;
 
+  bool firmaVerifiziert;
+
   bool telefonSichtbar;
   bool whatsappAktiv;
   bool emailSichtbar;
@@ -33,7 +37,6 @@ class Produkt {
   double latitude;
   double longitude;
 
-  // AUTOS
   String marke;
   String modell;
   String baujahr;
@@ -62,7 +65,6 @@ class Produkt {
   String finanzierungMoeglich;
   String inzahlungnahmeMoeglich;
 
-  // IMMOBILIEN
   String immobilienArt;
   String wohnflaeche;
   String zimmer;
@@ -81,10 +83,53 @@ class Produkt {
   String baujahrImmobilie;
   String verfuegbarAb;
 
-  // PRODUKTE
   String zustand;
   String hersteller;
   String garantie;
+
+  // Jobs
+  String jobGehalt;
+  String jobArbeitsort;
+  String jobErfahrung;
+  String jobBeschaeftigungsart;
+  String jobHomeoffice;
+  String jobFuehrerschein;
+
+  // Dienstleistungen
+  String dienstleistungEinsatzgebiet;
+  String dienstleistungPreisProStunde;
+  String dienstleistungOeffnungszeiten;
+  String dienstleistungAnfahrt;
+  String dienstleistungNotdienst;
+
+  // Vermietung
+  String mietpreisTag;
+  String mietpreisWoche;
+  String mietpreisMonat;
+  String mindestmietdauer;
+  String versicherung;
+  String lieferungMoeglich;
+
+  String bootMarke;
+  String bootModell;
+  String bootBaujahr;
+  String bootLaenge;
+  String bootLeistung;
+  String bootstyp;
+
+  String baumaschinenZustand;
+  String baumaschinenBaujahr;
+  String baumaschinenBetriebsstunden;
+  String baumaschinenKraftstoff;
+  String baumaschinenLeistung;
+  String baumaschinenGewicht;
+
+  String baumarktHersteller;
+  String baumarktMaterial;
+  String baumarktFarbe;
+  String baumarktMasse;
+  String baumarktGewicht;
+  String baumarktMenge;
 
   Produkt({
     this.id = "",
@@ -93,6 +138,8 @@ class Produkt {
     required this.ort,
     this.adresse = "",
     required this.kategorie,
+    this.unterkategorie = "",
+    this.detailUnterkategorie = "",
     required this.typ,
     required this.beschreibung,
     required this.icon,
@@ -104,13 +151,12 @@ class Produkt {
     this.telefon = "",
     this.firmenname = "",
     this.webseite = "",
+    this.firmaVerifiziert = false,
     this.telefonSichtbar = false,
     this.whatsappAktiv = false,
     this.emailSichtbar = false,
     this.latitude = 48.2082,
     this.longitude = 16.3738,
-
-    // AUTOS
     this.marke = "",
     this.modell = "",
     this.baujahr = "",
@@ -138,8 +184,6 @@ class Produkt {
     this.leasingMoeglich = "",
     this.finanzierungMoeglich = "",
     this.inzahlungnahmeMoeglich = "",
-
-    // IMMOBILIEN
     this.immobilienArt = "",
     this.wohnflaeche = "",
     this.zimmer = "",
@@ -157,11 +201,44 @@ class Produkt {
     this.heizung = "",
     this.baujahrImmobilie = "",
     this.verfuegbarAb = "",
-
-    // PRODUKTE
     this.zustand = "",
     this.hersteller = "",
     this.garantie = "",
+    this.jobGehalt = "",
+    this.jobArbeitsort = "",
+    this.jobErfahrung = "",
+    this.jobBeschaeftigungsart = "",
+    this.jobHomeoffice = "",
+    this.jobFuehrerschein = "",
+    this.dienstleistungEinsatzgebiet = "",
+    this.dienstleistungPreisProStunde = "",
+    this.dienstleistungOeffnungszeiten = "",
+    this.dienstleistungAnfahrt = "",
+    this.dienstleistungNotdienst = "",
+    this.mietpreisTag = "",
+    this.mietpreisWoche = "",
+    this.mietpreisMonat = "",
+    this.mindestmietdauer = "",
+    this.versicherung = "",
+    this.lieferungMoeglich = "",
+    this.bootMarke = "",
+    this.bootModell = "",
+    this.bootBaujahr = "",
+    this.bootLaenge = "",
+    this.bootLeistung = "",
+    this.bootstyp = "",
+    this.baumaschinenZustand = "",
+    this.baumaschinenBaujahr = "",
+    this.baumaschinenBetriebsstunden = "",
+    this.baumaschinenKraftstoff = "",
+    this.baumaschinenLeistung = "",
+    this.baumaschinenGewicht = "",
+    this.baumarktHersteller = "",
+    this.baumarktMaterial = "",
+    this.baumarktFarbe = "",
+    this.baumarktMasse = "",
+    this.baumarktGewicht = "",
+    this.baumarktMenge = "",
   });
 
   Map<String, dynamic> toMap() {
@@ -171,6 +248,8 @@ class Produkt {
       "ort": ort,
       "adresse": adresse,
       "kategorie": kategorie,
+      "unterkategorie": unterkategorie,
+      "detailUnterkategorie": detailUnterkategorie,
       "typ": typ,
       "beschreibung": beschreibung,
       "bild": bild,
@@ -181,13 +260,13 @@ class Produkt {
       "telefon": telefon,
       "firmenname": firmenname,
       "webseite": webseite,
+      "firmaVerifiziert": firmaVerifiziert,
       "telefonSichtbar": telefonSichtbar,
       "whatsappAktiv": whatsappAktiv,
       "emailSichtbar": emailSichtbar,
       "latitude": latitude,
       "longitude": longitude,
 
-      // AUTOS
       "marke": marke,
       "modell": modell,
       "baujahr": baujahr,
@@ -216,7 +295,6 @@ class Produkt {
       "finanzierungMoeglich": finanzierungMoeglich,
       "inzahlungnahmeMoeglich": inzahlungnahmeMoeglich,
 
-      // IMMOBILIEN
       "immobilienArt": immobilienArt,
       "wohnflaeche": wohnflaeche,
       "zimmer": zimmer,
@@ -235,10 +313,50 @@ class Produkt {
       "baujahrImmobilie": baujahrImmobilie,
       "verfuegbarAb": verfuegbarAb,
 
-      // PRODUKTE
       "zustand": zustand,
       "hersteller": hersteller,
       "garantie": garantie,
+
+      "jobGehalt": jobGehalt,
+      "jobArbeitsort": jobArbeitsort,
+      "jobErfahrung": jobErfahrung,
+      "jobBeschaeftigungsart": jobBeschaeftigungsart,
+      "jobHomeoffice": jobHomeoffice,
+      "jobFuehrerschein": jobFuehrerschein,
+
+      "dienstleistungEinsatzgebiet": dienstleistungEinsatzgebiet,
+      "dienstleistungPreisProStunde": dienstleistungPreisProStunde,
+      "dienstleistungOeffnungszeiten": dienstleistungOeffnungszeiten,
+      "dienstleistungAnfahrt": dienstleistungAnfahrt,
+      "dienstleistungNotdienst": dienstleistungNotdienst,
+
+      "mietpreisTag": mietpreisTag,
+      "mietpreisWoche": mietpreisWoche,
+      "mietpreisMonat": mietpreisMonat,
+      "mindestmietdauer": mindestmietdauer,
+      "versicherung": versicherung,
+      "lieferungMoeglich": lieferungMoeglich,
+
+      "bootMarke": bootMarke,
+      "bootModell": bootModell,
+      "bootBaujahr": bootBaujahr,
+      "bootLaenge": bootLaenge,
+      "bootLeistung": bootLeistung,
+      "bootstyp": bootstyp,
+
+      "baumaschinenZustand": baumaschinenZustand,
+      "baumaschinenBaujahr": baumaschinenBaujahr,
+      "baumaschinenBetriebsstunden": baumaschinenBetriebsstunden,
+      "baumaschinenKraftstoff": baumaschinenKraftstoff,
+      "baumaschinenLeistung": baumaschinenLeistung,
+      "baumaschinenGewicht": baumaschinenGewicht,
+
+      "baumarktHersteller": baumarktHersteller,
+      "baumarktMaterial": baumarktMaterial,
+      "baumarktFarbe": baumarktFarbe,
+      "baumarktMasse": baumarktMasse,
+      "baumarktGewicht": baumarktGewicht,
+      "baumarktMenge": baumarktMenge,
     };
   }
 
@@ -252,6 +370,8 @@ class Produkt {
       ort: data["ort"] ?? "",
       adresse: data["adresse"] ?? "",
       kategorie: data["kategorie"] ?? "",
+      unterkategorie: data["unterkategorie"] ?? "",
+      detailUnterkategorie: data["detailUnterkategorie"] ?? "",
       typ: data["typ"] ?? "Privat",
       beschreibung: data["beschreibung"] ?? "",
       icon: Icons.shopping_bag,
@@ -263,13 +383,13 @@ class Produkt {
       telefon: data["telefon"] ?? "",
       firmenname: data["firmenname"] ?? "",
       webseite: data["webseite"] ?? "",
+      firmaVerifiziert: data["firmaVerifiziert"] ?? false,
       telefonSichtbar: data["telefonSichtbar"] ?? false,
       whatsappAktiv: data["whatsappAktiv"] ?? false,
       emailSichtbar: data["emailSichtbar"] ?? false,
       latitude: (data["latitude"] ?? 48.2082).toDouble(),
       longitude: (data["longitude"] ?? 16.3738).toDouble(),
 
-      // AUTOS
       marke: data["marke"] ?? "",
       modell: data["modell"] ?? "",
       baujahr: data["baujahr"] ?? "",
@@ -283,10 +403,10 @@ class Produkt {
       vorbesitzer: data["vorbesitzer"] ?? "",
       antrieb: data["antrieb"] ?? "",
       tuev: data["tuev"] ?? "",
-      unfallfrei: data["unfallfrei"] ?? "",
-      tueren: data["tueren"] ?? "",
-      sitze: data["sitze"] ?? "",
-      serviceheft: data["serviceheft"] ?? "",
+       unfallfrei: data["unfallfrei"] ?? data["autoUnfallfrei"] ?? "",
+      tueren: data["tueren"] ?? data["autoTueren"] ?? "",
+      sitze: data["sitze"] ?? data["autoSitze"] ?? "",
+      serviceheft: data["serviceheft"] ?? data["autoServicegepflegt"] ?? "",
       nichtraucher: data["nichtraucher"] ?? "",
       mwstAusweisbar: data["mwstAusweisbar"] ?? "",
       hubraum: data["hubraum"] ?? "",
@@ -296,31 +416,78 @@ class Produkt {
       pickerlNeu: data["pickerlNeu"] ?? "",
       leasingMoeglich: data["leasingMoeglich"] ?? "",
       finanzierungMoeglich: data["finanzierungMoeglich"] ?? "",
-      inzahlungnahmeMoeglich: data["inzahlungnahmeMoeglich"] ?? "",
+      inzahlungnahmeMoeglich:
+          data["inzahlungnahmeMoeglich"] ?? data["autoInzahlungnahme"] ?? "",
 
-      // IMMOBILIEN
       immobilienArt: data["immobilienArt"] ?? "",
       wohnflaeche: data["wohnflaeche"] ?? "",
       zimmer: data["zimmer"] ?? "",
-      etage: data["etage"] ?? "",
-      kaution: data["kaution"] ?? "",
+      etage: data["etage"] ?? data["immobilienEtage"] ?? "",
+      kaution: data["kaution"] ?? data["vermietungKaution"] ?? "",
       betriebskosten: data["betriebskosten"] ?? "",
-      balkon: data["balkon"] ?? "",
+      balkon: data["balkon"] ?? data["immobilienBalkon"] ?? "",
       terrasse: data["terrasse"] ?? "",
       garten: data["garten"] ?? "",
-      garage: data["garage"] ?? "",
+      garage: data["garage"] ?? data["immobilienGarage"] ?? "",
       lift: data["lift"] ?? "",
       keller: data["keller"] ?? "",
-      moebliert: data["moebliert"] ?? "",
+      moebliert: data["moebliert"] ?? data["immobilienMoebliert"] ?? "",
       energieklasse: data["energieklasse"] ?? "",
-      heizung: data["heizung"] ?? "",
+      heizung: data["heizung"] ?? data["immobilienHeizung"] ?? "",
       baujahrImmobilie: data["baujahrImmobilie"] ?? "",
-      verfuegbarAb: data["verfuegbarAb"] ?? "",
+      verfuegbarAb: data["verfuegbarAb"] ?? data["immobilienVerfuegbarAb"] ?? "",
 
-      // PRODUKTE
       zustand: data["zustand"] ?? "",
       hersteller: data["hersteller"] ?? "",
       garantie: data["garantie"] ?? "",
+
+      jobGehalt: data["jobGehalt"] ?? "",
+      jobArbeitsort: data["jobArbeitsort"] ?? "",
+      jobErfahrung: data["jobErfahrung"] ?? "",
+      jobBeschaeftigungsart: data["jobBeschaeftigungsart"] ?? "",
+      jobHomeoffice: data["jobHomeoffice"] ?? "",
+      jobFuehrerschein: data["jobFuehrerschein"] ?? "",
+
+      dienstleistungEinsatzgebiet: data["dienstleistungEinsatzgebiet"] ?? "",
+      dienstleistungPreisProStunde: data["dienstleistungPreisProStunde"] ?? "",
+      dienstleistungOeffnungszeiten: data["dienstleistungOeffnungszeiten"] ?? "",
+      dienstleistungAnfahrt: data["dienstleistungAnfahrt"] ?? "",
+      dienstleistungNotdienst: data["dienstleistungNotdienst"] ?? "",
+
+      mietpreisTag:
+          data["mietpreisTag"] ?? data["vermietungTagespreis"] ?? "",
+      mietpreisWoche:
+          data["mietpreisWoche"] ?? data["vermietungWochenpreis"] ?? "",
+      mietpreisMonat:
+          data["mietpreisMonat"] ?? data["vermietungMonatspreis"] ?? "",
+      mindestmietdauer:
+          data["mindestmietdauer"] ?? data["vermietungMindestmietdauer"] ?? "",
+      versicherung:
+          data["versicherung"] ?? data["vermietungVersicherungInklusive"] ?? "",
+      lieferungMoeglich:
+          data["lieferungMoeglich"] ?? data["vermietungLieferungMoeglich"] ?? "",
+
+      bootMarke: data["bootMarke"] ?? "",
+      bootModell: data["bootModell"] ?? "",
+      bootBaujahr: data["bootBaujahr"] ?? "",
+      bootLaenge: data["bootLaenge"] ?? "",
+      bootLeistung: data["bootLeistung"] ?? "",
+      bootstyp: data["bootstyp"] ?? "",
+
+      baumaschinenZustand: data["baumaschinenZustand"] ?? "",
+      baumaschinenBaujahr: data["baumaschinenBaujahr"] ?? "",
+      baumaschinenBetriebsstunden:
+          data["baumaschinenBetriebsstunden"] ?? "",
+      baumaschinenKraftstoff: data["baumaschinenKraftstoff"] ?? "",
+      baumaschinenLeistung: data["baumaschinenLeistung"] ?? "",
+      baumaschinenGewicht: data["baumaschinenGewicht"] ?? "",
+
+      baumarktHersteller: data["baumarktHersteller"] ?? "",
+      baumarktMaterial: data["baumarktMaterial"] ?? "",
+      baumarktFarbe: data["baumarktFarbe"] ?? "",
+      baumarktMasse: data["baumarktMasse"] ?? "",
+      baumarktGewicht: data["baumarktGewicht"] ?? "",
+      baumarktMenge: data["baumarktMenge"] ?? "",
     );
   }
 }

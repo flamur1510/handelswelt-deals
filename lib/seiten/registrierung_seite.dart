@@ -1,16 +1,14 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
+import 'dart:math';
 
-// Für Google/Apple Login brauchst du zusätzlich diese Pakete in pubspec.yaml:
-// google_sign_in: ^6.2.1
-// sign_in_with_apple: ^6.1.1
-//
-// Danach:
-// flutter pub get
-//
-// WICHTIG:
-// Google/Apple müssen zusätzlich in Firebase Authentication aktiviert werden.
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crypto/crypto.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class RegistrierungSeite extends StatefulWidget {
   final VoidCallback? nachRegistrierung;
@@ -79,12 +77,56 @@ class _RegistrierungSeiteState extends State<RegistrierungSeite> {
     super.dispose();
   }
 
+  Map<String, dynamic> _profilDatenFuerUser(User user) {
+    return {
+      "uid": user.uid,
+      "kontoTyp": kontoTyp,
+      "benutzername": benutzernameController.text.trim(),
+      "email": emailController.text.trim(),
+      "emailVerifiziert": user.emailVerified,
+      "isAdmin": false,
+      "gesperrt": false,
+      "firmaVerifiziert": false,
+      "erstelltAm": FieldValue.serverTimestamp(),
+      "aktualisiertAm": FieldValue.serverTimestamp(),
+
+      if (kontoTyp == "privat") ...{
+        "vorname": vornameController.text.trim(),
+        "nachname": nachnameController.text.trim(),
+        "telefon": telefonController.text.trim(),
+        "ort": ortController.text.trim(),
+        "profilVerifiziert": false,
+      },
+
+      if (kontoTyp == "firma") ...{
+        "firmenname": firmennameController.text.trim(),
+        "rechtsform": rechtsformController.text.trim(),
+        "uidNummer": uidNummerController.text.trim(),
+        "ansprechpartner": ansprechpartnerController.text.trim(),
+        "telefon": telefonController.text.trim(),
+        "webseite": webseiteController.text.trim(),
+        "strasse": strasseController.text.trim(),
+        "plz": plzController.text.trim(),
+        "ort": firmenOrtController.text.trim(),
+        "land": landController.text.trim(),
+        "verifizierungsStatus": "offen",
+        "gewerbescheinUrl": "",
+        "verifiziertAm": null,
+        "verifiziertVon": "",
+        "verifizierungAbgelehntGrund": "",
+      },
+    };
+  }
+
   Future<void> registrierenMitEmail() async {
     if (!formKey.currentState!.validate()) return;
+    if (wirdGeladen) return;
 
     setState(() {
       wirdGeladen = true;
     });
+
+    User? erstellterUser;
 
     try {
       final auth = FirebaseAuth.instance;
@@ -96,6 +138,7 @@ class _RegistrierungSeiteState extends State<RegistrierungSeite> {
       );
 
       final user = userCredential.user;
+      erstellterUser = user;
 
       if (user == null) {
         throw FirebaseAuthException(
@@ -104,68 +147,84 @@ class _RegistrierungSeiteState extends State<RegistrierungSeite> {
         );
       }
 
-      await user.updateDisplayName(benutzernameController.text.trim());
+      try {
+        await user.updateDisplayName(benutzernameController.text.trim());
+      } catch (e) {
+        debugPrint("DisplayName konnte nicht gesetzt werden: $e");
+      }
 
-      await user.sendEmailVerification();
+      try {
+        await firestore.collection("users").doc(user.uid).set(
+              _profilDatenFuerUser(user),
+              SetOptions(merge: true),
+            );
+      } catch (e) {
+        debugPrint("Profil konnte nicht gespeichert werden: $e");
+        if (!mounted) return;
+        zeigeFehler(
+          "Konto wurde erstellt, aber das Profil konnte nicht gespeichert werden. Bitte später erneut einloggen.",
+        );
+        await FirebaseAuth.instance.signOut();
+        widget.zuLogin?.call();
+        return;
+      }
 
-      await firestore.collection("users").doc(user.uid).set({
-        "uid": user.uid,
-        "kontoTyp": kontoTyp,
-        "benutzername": benutzernameController.text.trim(),
-        "email": emailController.text.trim(),
-        "emailVerifiziert": false,
-        "erstelltAm": FieldValue.serverTimestamp(),
-        "aktualisiertAm": FieldValue.serverTimestamp(),
-
-        if (kontoTyp == "privat") ...{
-          "vorname": vornameController.text.trim(),
-          "nachname": nachnameController.text.trim(),
-          "telefon": telefonController.text.trim(),
-          "ort": ortController.text.trim(),
-          "profilVerifiziert": false,
-        },
-
-        if (kontoTyp == "firma") ...{
-          "firmenname": firmennameController.text.trim(),
-          "rechtsform": rechtsformController.text.trim(),
-          "uidNummer": uidNummerController.text.trim(),
-          "ansprechpartner": ansprechpartnerController.text.trim(),
-          "telefon": telefonController.text.trim(),
-          "webseite": webseiteController.text.trim(),
-          "strasse": strasseController.text.trim(),
-          "plz": plzController.text.trim(),
-          "ort": firmenOrtController.text.trim(),
-          "land": landController.text.trim(),
-          "firmaVerifiziert": false,
-          "verifizierungsStatus": "offen",
-          "gewerbescheinUrl": "",
-          "verifiziertAm": null,
-          "verifiziertVon": "",
-          "verifizierungAbgelehntGrund": "",
-        },
-      });
+      try {
+        await user.sendEmailVerification();
+      } catch (e) {
+        debugPrint("Bestätigungs-E-Mail konnte nicht gesendet werden: $e");
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Konto erstellt. Bitte logge dich ein und fordere die Bestätigungs-E-Mail später erneut an.",
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        await FirebaseAuth.instance.signOut();
+        widget.zuLogin?.call();
+        return;
+      }
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            "Registrierung erfolgreich. Bitte bestätige deine E-Mail-Adresse.",
+            "Registrierung erfolgreich. Bitte bestätige deine E-Mail-Adresse und logge dich danach ein.",
           ),
+          backgroundColor: Color(0xff5b2cff),
         ),
       );
 
-      widget.nachRegistrierung?.call();
+      await FirebaseAuth.instance.signOut();
+      widget.zuLogin?.call();
     } on FirebaseAuthException catch (e) {
       zeigeFehler(firebaseFehlerText(e));
     } catch (e) {
-      zeigeFehler("Fehler: $e");
-    }
-
-    if (mounted) {
-      setState(() {
-        wirdGeladen = false;
-      });
+      debugPrint("Registrierung Fehler: $e");
+      if (erstellterUser != null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Konto wurde erstellt. Bitte bestätige deine E-Mail-Adresse und logge dich danach ein.",
+            ),
+            backgroundColor: Color(0xff5b2cff),
+          ),
+        );
+        await FirebaseAuth.instance.signOut();
+        widget.zuLogin?.call();
+      } else {
+        zeigeFehler("Registrierung fehlgeschlagen: $e");
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          wirdGeladen = false;
+        });
+      }
     }
   }
 
@@ -195,16 +254,211 @@ class _RegistrierungSeiteState extends State<RegistrierungSeite> {
     );
   }
 
-  Future<void> registrierenMitGoogle() async {
-    zeigeFehler(
-      "Google Login wird im nächsten Schritt verbunden. Dafür brauchen wir google_sign_in und Firebase-Konfiguration.",
+  String _zufallsNonce([int laenge = 32]) {
+    const zeichen =
+        "0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._";
+    final random = Random.secure();
+    return List.generate(laenge, (_) => zeichen[random.nextInt(zeichen.length)])
+        .join();
+  }
+
+  String _sha256(String input) {
+    final bytes = utf8.encode(input);
+    return sha256.convert(bytes).toString();
+  }
+
+  Future<void> _socialRegistrierungAbschliessen(UserCredential credential) async {
+    final user = credential.user;
+
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: "user-null",
+        message: "Benutzer konnte nicht erstellt werden.",
+      );
+    }
+
+    final firestore = FirebaseFirestore.instance;
+    final userRef = firestore.collection("users").doc(user.uid);
+    final userDoc = await userRef.get();
+
+    final nameAusProvider = user.displayName?.trim();
+    final emailAusProvider = user.email?.trim() ?? "";
+    final benutzername = benutzernameController.text.trim().isNotEmpty
+        ? benutzernameController.text.trim()
+        : (nameAusProvider?.isNotEmpty == true
+            ? nameAusProvider!
+            : (emailAusProvider.contains("@")
+                ? emailAusProvider.split("@").first
+                : "Nutzer"));
+
+    await userRef.set({
+      "uid": user.uid,
+      "kontoTyp": kontoTyp,
+      "benutzername": benutzername,
+      "email": emailAusProvider.isNotEmpty ? emailAusProvider : emailController.text.trim(),
+      "emailVerifiziert": user.emailVerified,
+      "isAdmin": userDoc.data()?['isAdmin'] ?? false,
+      "gesperrt": userDoc.data()?['gesperrt'] ?? false,
+      "firmaVerifiziert": userDoc.data()?['firmaVerifiziert'] ?? false,
+      "aktualisiertAm": FieldValue.serverTimestamp(),
+      if (!userDoc.exists) "erstelltAm": FieldValue.serverTimestamp(),
+      if (kontoTyp == "privat") ...{
+        "vorname": vornameController.text.trim(),
+        "nachname": nachnameController.text.trim(),
+        "telefon": telefonController.text.trim(),
+        "ort": ortController.text.trim(),
+        "profilVerifiziert": userDoc.data()?['profilVerifiziert'] ?? false,
+      },
+      if (kontoTyp == "firma") ...{
+        "firmenname": firmennameController.text.trim().isNotEmpty
+            ? firmennameController.text.trim()
+            : benutzername,
+        "rechtsform": rechtsformController.text.trim(),
+        "uidNummer": uidNummerController.text.trim(),
+        "ansprechpartner": ansprechpartnerController.text.trim(),
+        "telefon": telefonController.text.trim(),
+        "webseite": webseiteController.text.trim(),
+        "strasse": strasseController.text.trim(),
+        "plz": plzController.text.trim(),
+        "ort": firmenOrtController.text.trim(),
+        "land": landController.text.trim().isEmpty ? "Österreich" : landController.text.trim(),
+        "verifizierungsStatus": userDoc.data()?['verifizierungsStatus'] ?? "offen",
+        "gewerbescheinUrl": userDoc.data()?['gewerbescheinUrl'] ?? "",
+        "verifiziertAm": userDoc.data()?['verifiziertAm'],
+        "verifiziertVon": userDoc.data()?['verifiziertVon'] ?? "",
+        "verifizierungAbgelehntGrund": userDoc.data()?['verifizierungAbgelehntGrund'] ?? "",
+      },
+    }, SetOptions(merge: true));
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Anmeldung erfolgreich."),
+        backgroundColor: Color(0xff5b2cff),
+      ),
     );
+
+    widget.nachRegistrierung?.call();
+  }
+
+  Future<void> registrierenMitGoogle() async {
+    if (wirdGeladen) return;
+
+    setState(() => wirdGeladen = true);
+
+    try {
+      UserCredential credential;
+
+      if (kIsWeb) {
+        final provider = GoogleAuthProvider();
+        credential = await FirebaseAuth.instance.signInWithPopup(provider);
+      } else {
+        final googleUser = await GoogleSignIn().signIn();
+        if (googleUser == null) return;
+
+        final googleAuth = await googleUser.authentication;
+        final oauthCredential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        credential =
+            await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+      }
+
+      await _socialRegistrierungAbschliessen(credential);
+    } on FirebaseAuthException catch (e) {
+      zeigeFehler(firebaseFehlerText(e));
+    } catch (e) {
+      zeigeFehler("Google Registrierung fehlgeschlagen: $e");
+    } finally {
+      if (mounted) setState(() => wirdGeladen = false);
+    }
   }
 
   Future<void> registrierenMitApple() async {
-    zeigeFehler(
-      "Apple Login wird im nächsten Schritt verbunden. Dafür brauchen wir sign_in_with_apple und Apple Developer Konfiguration.",
-    );
+    if (wirdGeladen) return;
+
+    setState(() => wirdGeladen = true);
+
+    try {
+      UserCredential credential;
+
+      if (kIsWeb) {
+        final provider = OAuthProvider("apple.com");
+        provider.addScope("email");
+        provider.addScope("name");
+        credential = await FirebaseAuth.instance.signInWithPopup(provider);
+      } else {
+        final rawNonce = _zufallsNonce();
+        final nonce = _sha256(rawNonce);
+
+        final appleCredential = await SignInWithApple.getAppleIDCredential(
+          scopes: const [
+            AppleIDAuthorizationScopes.email,
+            AppleIDAuthorizationScopes.fullName,
+          ],
+          nonce: nonce,
+        );
+
+        final oauthCredential = OAuthProvider("apple.com").credential(
+          idToken: appleCredential.identityToken,
+          rawNonce: rawNonce,
+        );
+
+        credential =
+            await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+      }
+
+      await _socialRegistrierungAbschliessen(credential);
+    } on FirebaseAuthException catch (e) {
+      zeigeFehler(firebaseFehlerText(e));
+    } catch (e) {
+      zeigeFehler("Apple Registrierung fehlgeschlagen: $e");
+    } finally {
+      if (mounted) setState(() => wirdGeladen = false);
+    }
+  }
+
+  Future<void> registrierenMitFacebook() async {
+    if (wirdGeladen) return;
+
+    setState(() => wirdGeladen = true);
+
+    try {
+      UserCredential credential;
+
+      if (kIsWeb) {
+        final provider = FacebookAuthProvider();
+        credential = await FirebaseAuth.instance.signInWithPopup(provider);
+      } else {
+        final result = await FacebookAuth.instance.login(
+          permissions: const ["email", "public_profile"],
+        );
+
+        if (result.status != LoginStatus.success || result.accessToken == null) {
+          throw FirebaseAuthException(
+            code: "facebook-aborted",
+            message: "Facebook Anmeldung wurde abgebrochen.",
+          );
+        }
+
+        final facebookCredential =
+            FacebookAuthProvider.credential(result.accessToken!.tokenString);
+
+        credential =
+            await FirebaseAuth.instance.signInWithCredential(facebookCredential);
+      }
+
+      await _socialRegistrierungAbschliessen(credential);
+    } on FirebaseAuthException catch (e) {
+      zeigeFehler(firebaseFehlerText(e));
+    } catch (e) {
+      zeigeFehler("Facebook Registrierung fehlgeschlagen: $e");
+    } finally {
+      if (mounted) setState(() => wirdGeladen = false);
+    }
   }
 
   String? pflichtfeld(String? value, String feldname) {
@@ -724,6 +978,12 @@ class _RegistrierungSeiteState extends State<RegistrierungSeite> {
           text: "Mit Apple anmelden",
           onTap: registrierenMitApple,
         ),
+        const SizedBox(height: 10),
+        _socialButton(
+          icon: Icons.facebook,
+          text: "Mit Facebook anmelden",
+          onTap: registrierenMitFacebook,
+        ),
       ],
     );
   }
@@ -735,7 +995,7 @@ class _RegistrierungSeiteState extends State<RegistrierungSeite> {
   }) {
     return InkWell(
       borderRadius: BorderRadius.circular(18),
-      onTap: onTap,
+      onTap: wirdGeladen ? null : onTap,
       child: Container(
         height: 54,
         padding: const EdgeInsets.symmetric(horizontal: 14),

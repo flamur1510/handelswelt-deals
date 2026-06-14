@@ -45,6 +45,7 @@ class _ProfilSeiteState extends State<ProfilSeite> {
   bool wirdGespeichert = false;
   bool bearbeitungsModus = false;
   bool istAdmin = false;
+  String? geladeneUserId;
 
   String kontoTyp = "privat";
   bool firmaVerifiziert = false;
@@ -76,8 +77,45 @@ class _ProfilSeiteState extends State<ProfilSeite> {
     super.dispose();
   }
 
+  void _profilStateZuruecksetzen() {
+    datenGeladen = false;
+    wirdGespeichert = false;
+    bearbeitungsModus = false;
+    istAdmin = false;
+    kontoTyp = "privat";
+    firmaVerifiziert = false;
+    profilVerifiziert = false;
+    erstelltAm = null;
+    profilBildUrl = "";
+    wirdProfilbildHochgeladen = false;
+    wirdProfilbildGeloescht = false;
+    gewerbescheinUrl = "";
+    wirdGewerbescheinHochgeladen = false;
+
+    benutzernameController.clear();
+    vornameController.clear();
+    nachnameController.clear();
+    telefonController.clear();
+    ortController.clear();
+    firmennameController.clear();
+    rechtsformController.clear();
+    uidNummerController.clear();
+    ansprechpartnerController.clear();
+    webseiteController.clear();
+    strasseController.clear();
+    plzController.clear();
+    landController.clear();
+  }
+
   Future<void> userDatenLaden(User user) async {
-    if (datenGeladen) return;
+    // Wenn zwischen Privatkonto und Firmenkonto gewechselt wird, darf der alte
+    // Profil-State nicht weiter angezeigt werden.
+    if (datenGeladen && geladeneUserId == user.uid) return;
+
+    if (geladeneUserId != user.uid) {
+      _profilStateZuruecksetzen();
+      geladeneUserId = user.uid;
+    }
 
     final doc = await FirebaseFirestore.instance
         .collection("users")
@@ -925,6 +963,12 @@ class _ProfilSeiteState extends State<ProfilSeite> {
                   onTap: () async {
                     Navigator.of(sheetContext).pop();
                     await FirebaseAuth.instance.signOut();
+                    if (mounted) {
+                      setState(() {
+                        geladeneUserId = null;
+                        _profilStateZuruecksetzen();
+                      });
+                    }
                   },
                 ),
                 _einstellungTile(
@@ -1784,7 +1828,7 @@ class _ProfilSeiteState extends State<ProfilSeite> {
             _leerKarte()
           else
             SizedBox(
-              height: 395,
+              height: 520,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: aktiveProdukte.length,
@@ -1800,7 +1844,7 @@ class _ProfilSeiteState extends State<ProfilSeite> {
 
   Widget _inseratSwipeKarte(Produkt produkt) {
     final preisText = _produktPreisText(produkt);
-    final detailChips = _inseratDetailChips(produkt).take(5).toList();
+    final detailChips = _inseratDetailChips(produkt).take(3).toList();
 
     return Container(
       width: 260,
@@ -2099,12 +2143,16 @@ class _ProfilSeiteState extends State<ProfilSeite> {
         children: [
           Icon(icon, color: farbe, size: 15),
           const SizedBox(width: 5),
-          Text(
-            text,
-            style: TextStyle(
-              color: farbe,
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: farbe,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
         ],
@@ -2446,12 +2494,16 @@ class _ProfilSeiteState extends State<ProfilSeite> {
         children: [
           Icon(icon, color: farbe, size: 16),
           const SizedBox(width: 5),
-          Text(
-            text,
-            style: TextStyle(
-              color: farbe,
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: farbe,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
         ],

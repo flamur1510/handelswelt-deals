@@ -1,5 +1,14 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'registrierung_seite.dart';
 
@@ -99,16 +108,166 @@ class _LoginSeiteState extends State<LoginSeite> {
     }
   }
 
+  String _zufallsNonce([int laenge = 32]) {
+    const zeichen =
+        "0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._";
+    final random = Random.secure();
+    return List.generate(laenge, (_) => zeichen[random.nextInt(zeichen.length)])
+        .join();
+  }
+
+  String _sha256(String input) {
+    final bytes = utf8.encode(input);
+    return sha256.convert(bytes).toString();
+  }
+
+  Future<void> _nachSocialLogin(UserCredential credential) async {
+    final user = credential.user;
+
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: "user-null",
+        message: "Benutzer konnte nicht geladen werden.",
+      );
+    }
+
+    final userRef = FirebaseFirestore.instance.collection("users").doc(user.uid);
+    final userDoc = await userRef.get();
+
+    await userRef.set({
+      "uid": user.uid,
+      "kontoTyp": userDoc.data()?['kontoTyp'] ?? "privat",
+      "benutzername": user.displayName ?? user.email?.split("@").first ?? "Nutzer",
+      "email": user.email ?? "",
+      "emailVerifiziert": user.emailVerified,
+      "telefon": user.phoneNumber ?? userDoc.data()?['telefon'] ?? "",
+      "ort": userDoc.data()?['ort'] ?? "",
+      "profilVerifiziert": userDoc.data()?['profilVerifiziert'] ?? false,
+      "aktualisiertAm": FieldValue.serverTimestamp(),
+      if (!userDoc.exists) "erstelltAm": FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    if (!mounted) return;
+    Navigator.pop(context);
+  }
+
   Future<void> loginMitGoogle() async {
-    zeigeFehler(
-      "Google Login verbinden wir im nächsten Schritt mit google_sign_in und Firebase.",
-    );
+    if (wirdGeladen) return;
+
+    setState(() => wirdGeladen = true);
+
+    try {
+      UserCredential credential;
+
+      if (kIsWeb) {
+        final provider = GoogleAuthProvider();
+        credential = await FirebaseAuth.instance.signInWithPopup(provider);
+      } else {
+        final googleUser = await GoogleSignIn().signIn();
+        if (googleUser == null) return;
+
+        final googleAuth = await googleUser.authentication;
+        final oauthCredential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        credential =
+            await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+      }
+
+      await _nachSocialLogin(credential);
+    } on FirebaseAuthException catch (e) {
+      zeigeFehler(firebaseFehlerText(e));
+    } catch (e) {
+      zeigeFehler("Google Login fehlgeschlagen: $e");
+    } finally {
+      if (mounted) setState(() => wirdGeladen = false);
+    }
   }
 
   Future<void> loginMitApple() async {
-    zeigeFehler(
-      "Apple Login verbinden wir im nächsten Schritt mit sign_in_with_apple und Firebase.",
-    );
+    if (wirdGeladen) return;
+
+    setState(() => wirdGeladen = true);
+
+    try {
+      UserCredential credential;
+
+      if (kIsWeb) {
+        final provider = OAuthProvider("apple.com");
+        provider.addScope("email");
+        provider.addScope("name");
+        credential = await FirebaseAuth.instance.signInWithPopup(provider);
+      } else {
+        final rawNonce = _zufallsNonce();
+        final nonce = _sha256(rawNonce);
+
+        final appleCredential = await SignInWithApple.getAppleIDCredential(
+          scopes: const [
+            AppleIDAuthorizationScopes.email,
+            AppleIDAuthorizationScopes.fullName,
+          ],
+          nonce: nonce,
+        );
+
+        final oauthCredential = OAuthProvider("apple.com").credential(
+          idToken: appleCredential.identityToken,
+          rawNonce: rawNonce,
+        );
+
+        credential =
+            await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+      }
+
+      await _nachSocialLogin(credential);
+    } on FirebaseAuthException catch (e) {
+      zeigeFehler(firebaseFehlerText(e));
+    } catch (e) {
+      zeigeFehler("Apple Login fehlgeschlagen: $e");
+    } finally {
+      if (mounted) setState(() => wirdGeladen = false);
+    }
+  }
+
+  Future<void> loginMitFacebook() async {
+    if (wirdGeladen) return;
+
+    setState(() => wirdGeladen = true);
+
+    try {
+      UserCredential credential;
+
+      if (kIsWeb) {
+        final provider = FacebookAuthProvider();
+        credential = await FirebaseAuth.instance.signInWithPopup(provider);
+      } else {
+        final result = await FacebookAuth.instance.login(
+          permissions: const ["email", "public_profile"],
+        );
+
+        if (result.status != LoginStatus.success || result.accessToken == null) {
+          throw FirebaseAuthException(
+            code: "facebook-aborted",
+            message: "Facebook Anmeldung wurde abgebrochen.",
+          );
+        }
+
+        final facebookCredential =
+            FacebookAuthProvider.credential(result.accessToken!.tokenString);
+
+        credential =
+            await FirebaseAuth.instance.signInWithCredential(facebookCredential);
+      }
+
+      await _nachSocialLogin(credential);
+    } on FirebaseAuthException catch (e) {
+      zeigeFehler(firebaseFehlerText(e));
+    } catch (e) {
+      zeigeFehler("Facebook Login fehlgeschlagen: $e");
+    } finally {
+      if (mounted) setState(() => wirdGeladen = false);
+    }
   }
 
   String firebaseFehlerText(FirebaseAuthException e) {
@@ -467,6 +626,12 @@ class _LoginSeiteState extends State<LoginSeite> {
           icon: Icons.apple,
           text: "Mit Apple anmelden",
           onTap: loginMitApple,
+        ),
+        const SizedBox(height: 10),
+        _socialButton(
+          icon: Icons.facebook,
+          text: "Mit Facebook anmelden",
+          onTap: loginMitFacebook,
         ),
       ],
     );

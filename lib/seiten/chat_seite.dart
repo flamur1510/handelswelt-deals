@@ -44,6 +44,11 @@ class _ChatSeiteState extends State<ChatSeite> with WidgetsBindingObserver {
   bool wirdDateiGesendet = false;
   bool nimmtAudioAuf = false;
   DateTime? aufnahmeStart;
+
+  String? vorgemerkteAudioDatei;
+  int vorgemerkteAudioDauer = 0;
+  bool audioVorschauBereit = false;
+
   String? aktuellSpielendeAudioUrl;
 
   String chatIdFuer(String userId) {
@@ -550,7 +555,6 @@ class _ChatSeiteState extends State<ChatSeite> with WidgetsBindingObserver {
       setState(() {
         nimmtAudioAuf = false;
         aufnahmeStart = null;
-        wirdAudioGesendet = true;
       });
 
       if (pfad == null || pfad.trim().isEmpty) {
@@ -577,40 +581,13 @@ class _ChatSeiteState extends State<ChatSeite> with WidgetsBindingObserver {
         return;
       }
 
-      final chatId = chatIdFuer(user.uid);
-      final dateiname =
-          "${DateTime.now().millisecondsSinceEpoch}_${user.uid}.m4a";
-
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child("chat_audio")
-          .child(chatId)
-          .child(dateiname);
-
-      await ref.putFile(datei);
-      final audioUrl = await ref.getDownloadURL();
-
-      final basis = await _chatBasisDaten(user);
-      if (basis == null) return;
-
-      final chatRef = basis["chatRef"] as DocumentReference;
-
-      await _chatUebersichtAktualisieren(
-        user: user,
-        letzteNachricht: "🎤 Sprachnachricht",
-        letzteNachrichtTyp: "audio",
-      );
-
-      await chatRef.collection("nachrichten").add({
-        "typ": "audio",
-        "text": "",
-        "audioUrl": audioUrl,
-        "dauerSekunden": dauer,
-        "senderId": user.uid,
-        "senderEmail": user.email ?? "",
-        "gelesenVon": [user.uid],
-        "erstelltAm": FieldValue.serverTimestamp(),
+      setState(() {
+        vorgemerkteAudioDatei = pfad;
+        vorgemerkteAudioDauer = dauer;
+        audioVorschauBereit = true;
       });
+      return;
+
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -630,7 +607,37 @@ class _ChatSeiteState extends State<ChatSeite> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> audioAbspielenOderStoppen(String audioUrl) async {
+  
+  Future<void> sprachaufnahmeSenden() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || vorgemerkteAudioDatei == null) return;
+    try {
+      setState(() => wirdAudioGesendet = true);
+      final datei = File(vorgemerkteAudioDatei!);
+      final chatId = chatIdFuer(user.uid);
+      final ref = FirebaseStorage.instance.ref().child("chat_audio").child(chatId).child("${DateTime.now().millisecondsSinceEpoch}_${user.uid}.m4a");
+      await ref.putFile(datei);
+      final audioUrl = await ref.getDownloadURL();
+      final basis = await _chatBasisDaten(user);
+      if (basis == null) return;
+      final chatRef = basis["chatRef"] as DocumentReference;
+      await _chatUebersichtAktualisieren(user: user, letzteNachricht: "🎤 Sprachnachricht", letzteNachrichtTyp: "audio");
+      await chatRef.collection("nachrichten").add({
+        "typ":"audio","text":"","audioUrl":audioUrl,"dauerSekunden":vorgemerkteAudioDauer,
+        "senderId":user.uid,"senderEmail":user.email ?? "","gelesenVon":[user.uid],
+        "erstelltAm":FieldValue.serverTimestamp(),
+      });
+      setState(() {
+        vorgemerkteAudioDatei = null;
+        vorgemerkteAudioDauer = 0;
+        audioVorschauBereit = false;
+      });
+    } finally {
+      if (mounted) setState(() => wirdAudioGesendet = false);
+    }
+  }
+
+Future<void> audioAbspielenOderStoppen(String audioUrl) async {
     if (audioUrl.trim().isEmpty) return;
 
     try {
@@ -693,18 +700,7 @@ class _ChatSeiteState extends State<ChatSeite> with WidgetsBindingObserver {
 
     try {
       final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: const [
-          'pdf',
-          'doc',
-          'docx',
-          'xls',
-          'xlsx',
-          'ppt',
-          'pptx',
-          'txt',
-          'zip',
-        ],
+        type: FileType.any,
         withData: true,
       );
 
@@ -715,12 +711,12 @@ class _ChatSeiteState extends State<ChatSeite> with WidgetsBindingObserver {
       final dateigroesse = picked.size;
       final endung = picked.extension?.toLowerCase() ?? '';
 
-      const maxBytes = 25 * 1024 * 1024;
+      const maxBytes = 100 * 1024 * 1024;
       if (dateigroesse > maxBytes) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Die Datei darf maximal 25 MB groß sein.'),
+            content: Text('Die Datei darf maximal 100 MB groß sein.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1402,10 +1398,62 @@ class _ChatSeiteState extends State<ChatSeite> with WidgetsBindingObserver {
                             .orderBy("erstelltAm", descending: true)
                             .snapshots(),
                         builder: (context, snapshot) {
+                          if (snapshot.hasError) {
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(22),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.error_outline,
+                                      color: Colors.red,
+                                      size: 34,
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      "Nachrichten konnten nicht geladen werden.",
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Color(0xff050b2c),
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      snapshot.error.toString(),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Color(0xff74788d),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+
                           if (!snapshot.hasData) {
                             return const Center(
-                              child: CircularProgressIndicator(
-                                color: Color(0xff5b2cff),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CircularProgressIndicator(
+                                    color: Color(0xff5b2cff),
+                                  ),
+                                  SizedBox(height: 12),
+                                  Text(
+                                    "Nachrichten werden geladen...",
+                                    style: TextStyle(
+                                      color: Color(0xff74788d),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
                               ),
                             );
                           }
@@ -1968,7 +2016,7 @@ class _ChatSeiteState extends State<ChatSeite> with WidgetsBindingObserver {
         dateigroesse: dateigroesse,
       ),
       child: Container(
-        width: 280,
+        width: 220,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: istIch ? Colors.white.withOpacity(0.14) : Colors.white,
@@ -1982,8 +2030,8 @@ class _ChatSeiteState extends State<ChatSeite> with WidgetsBindingObserver {
         child: Row(
           children: [
             Container(
-              width: 46,
-              height: 46,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: istIch ? Colors.white : const Color(0xff5b2cff),
                 borderRadius: BorderRadius.circular(14),
@@ -2158,6 +2206,145 @@ class _ChatSeiteState extends State<ChatSeite> with WidgetsBindingObserver {
     );
   }
 
+  void _anhaengeMenueOeffnen(bool andereAktionLaeuft) {
+    if (andereAktionLaeuft) return;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        Widget aktion({
+          required IconData icon,
+          required String titel,
+          required String text,
+          required Color farbe,
+          required VoidCallback onTap,
+        }) {
+          return ListTile(
+            leading: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: farbe.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Icon(icon, color: farbe),
+            ),
+            title: Text(
+              titel,
+              style: const TextStyle(
+                color: Color(0xff050b2c),
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            subtitle: Text(
+              text,
+              style: const TextStyle(
+                color: Color(0xff74788d),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              onTap();
+            },
+          );
+        }
+
+        return SafeArea(
+          child: Container(
+            margin: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x22000000),
+                  blurRadius: 18,
+                  offset: Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xffd8d8e8),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                aktion(
+                  icon: Icons.photo_outlined,
+                  titel: "Bild senden",
+                  text: "Foto aus der Galerie auswählen",
+                  farbe: const Color(0xff5b2cff),
+                  onTap: bildSenden,
+                ),
+                aktion(
+                  icon: Icons.attach_file,
+                  titel: "Datei senden",
+                  text: "PDF, Dokument oder andere Datei",
+                  farbe: Colors.orange,
+                  onTap: dateiSenden,
+                ),
+                aktion(
+                  icon: Icons.location_on_outlined,
+                  titel: "Standort senden",
+                  text: "Aktuellen Standort teilen",
+                  farbe: Colors.blue,
+                  onTap: standortSenden,
+                ),
+                aktion(
+                  icon: nimmtAudioAuf ? Icons.stop : Icons.mic_none_outlined,
+                  titel: nimmtAudioAuf ? "Aufnahme stoppen" : "Sprachnachricht",
+                  text: nimmtAudioAuf
+                      ? "Aufnahme beenden"
+                      : "Kurze Sprachnachricht aufnehmen",
+                  farbe: Colors.red,
+                  onTap: nimmtAudioAuf
+                      ? sprachaufnahmeStoppenUndSenden
+                      : sprachaufnahmeStarten,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _kreisAktion({
+    required IconData icon,
+    required Color farbe,
+    required VoidCallback? onTap,
+    Widget? ladeWidget,
+  }) {
+    return SizedBox(
+      width: 52,
+      height: 52,
+      child: IconButton(
+        style: IconButton.styleFrom(
+          backgroundColor: farbe.withOpacity(0.12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+        onPressed: onTap,
+        icon: ladeWidget ??
+            Icon(
+              icon,
+              color: farbe,
+              size: 23,
+            ),
+      ),
+    );
+  }
+
   Widget _eingabeLeiste() {
     final gesperrt = wirdGesendet ||
         wirdBildGesendet ||
@@ -2166,162 +2353,103 @@ class _ChatSeiteState extends State<ChatSeite> with WidgetsBindingObserver {
         wirdDateiGesendet;
     final andereAktionLaeuft = gesperrt || nimmtAudioAuf;
 
+    final laedtAnhang =
+        wirdBildGesendet || wirdDateiGesendet || wirdStandortGesendet || wirdAudioGesendet;
+
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xffececf4)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0f000000),
+            blurRadius: 14,
+            offset: Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          SizedBox(
-            width: 46,
-            height: 46,
-            child: IconButton(
-              style: IconButton.styleFrom(
-                backgroundColor: const Color(0xfffff6df),
-              ),
-              onPressed: andereAktionLaeuft ? null : dateiSenden,
-              icon: wirdDateiGesendet
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        color: Colors.orange,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Icon(
-                      Icons.attach_file,
-                      color: Colors.orange,
-                    ),
-            ),
-          ),
-          const SizedBox(width: 7),
-          SizedBox(
-            width: 46,
-            height: 46,
-            child: IconButton(
-              style: IconButton.styleFrom(
-                backgroundColor: const Color(0xfff1edff),
-              ),
-              onPressed: andereAktionLaeuft ? null : bildSenden,
-              icon: wirdBildGesendet
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        color: Color(0xff5b2cff),
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Icon(
-                      Icons.photo_outlined,
+          _kreisAktion(
+            icon: Icons.add,
+            farbe: const Color(0xff5b2cff),
+            onTap: andereAktionLaeuft ? null : () => _anhaengeMenueOeffnen(andereAktionLaeuft),
+            ladeWidget: laedtAnhang
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
                       color: Color(0xff5b2cff),
+                      strokeWidth: 2,
                     ),
-            ),
+                  )
+                : null,
           ),
-          const SizedBox(width: 7),
-          SizedBox(
-            width: 46,
-            height: 46,
-            child: IconButton(
-              style: IconButton.styleFrom(
-                backgroundColor: const Color(0xffeaf7ff),
-              ),
-              onPressed: andereAktionLaeuft ? null : standortSenden,
-              icon: wirdStandortGesendet
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        color: Colors.blue,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Icon(
-                      Icons.location_on_outlined,
-                      color: Colors.blue,
-                    ),
-            ),
-          ),
-          const SizedBox(width: 7),
-          SizedBox(
-            width: 46,
-            height: 46,
-            child: IconButton(
-              style: IconButton.styleFrom(
-                backgroundColor: nimmtAudioAuf
-                    ? const Color(0xffffedf1)
-                    : const Color(0xfff7f7fb),
-              ),
-              onPressed: gesperrt
-                  ? null
-                  : (nimmtAudioAuf
-                      ? sprachaufnahmeStoppenUndSenden
-                      : sprachaufnahmeStarten),
-              icon: wirdAudioGesendet
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        color: Colors.red,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : Icon(
-                      nimmtAudioAuf ? Icons.stop : Icons.mic_none_outlined,
-                      color: nimmtAudioAuf ? Colors.red : const Color(0xff050b2c),
-                    ),
-            ),
-          ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
-            child: TextField(
-              controller: nachrichtController,
-              enabled: !nimmtAudioAuf,
-              minLines: 1,
-              maxLines: 4,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) {
-                if (!andereAktionLaeuft) nachrichtSenden();
-              },
-              decoration: InputDecoration(
-                hintText: nimmtAudioAuf ? "Aufnahme läuft..." : "Nachricht schreiben...",
-                filled: true,
-                fillColor: const Color(0xfff7f7fb),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(17),
-                  borderSide: BorderSide.none,
+            child: Container(
+              constraints: const BoxConstraints(
+                minHeight: 52,
+                maxHeight: 130,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xfff7f7fb),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xffeeeeF6)),
+              ),
+              child: TextField(
+                controller: nachrichtController,
+                enabled: !nimmtAudioAuf,
+                minLines: 1,
+                maxLines: 5,
+                textInputAction: TextInputAction.newline,
+                keyboardType: TextInputType.multiline,
+                onSubmitted: (_) {
+                  // Auf mobilen Geräten soll Enter nicht versehentlich senden.
+                },
+                decoration: InputDecoration(
+                  hintText: nimmtAudioAuf
+                      ? "Aufnahme läuft... Tippe auf + zum Stoppen"
+                      : "Nachricht schreiben...",
+                  filled: false,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 15,
+                  ),
+                  border: InputBorder.none,
                 ),
               ),
             ),
           ),
           const SizedBox(width: 10),
           SizedBox(
-            width: 52,
-            height: 52,
+            width: 56,
+            height: 56,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xff5b2cff),
                 disabledBackgroundColor: const Color(0xffc9bfff),
                 padding: EdgeInsets.zero,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(17),
+                  borderRadius: BorderRadius.circular(18),
                 ),
+                elevation: 0,
               ),
               onPressed: andereAktionLaeuft ? null : nachrichtSenden,
               child: wirdGesendet
                   ? const SizedBox(
-                      width: 18,
-                      height: 18,
+                      width: 19,
+                      height: 19,
                       child: CircularProgressIndicator(
                         color: Colors.white,
                         strokeWidth: 2,
                       ),
                     )
-                  : const Icon(Icons.send, color: Colors.white),
+                  : const Icon(Icons.send_rounded, color: Colors.white),
             ),
           ),
         ],

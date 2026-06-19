@@ -3,6 +3,7 @@
     "source": "functions"
   },
   "hosting": {
+    "site": "handelswelt-deals",
     "public": "marketing-site/public",
     "ignore": [
       "firebase.json",

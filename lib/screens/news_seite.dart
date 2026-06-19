@@ -135,7 +135,7 @@ class _NewsSeiteState extends State<NewsSeite> {
 
   Widget _handelsweltHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
         color: const Color(0xff050b2c),
         borderRadius: BorderRadius.circular(24),
@@ -150,61 +150,23 @@ class _NewsSeiteState extends State<NewsSeite> {
       child: Row(
         children: [
           Container(
-            width: 46,
-            height: 46,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xff5b2cff), Color(0xff7a5cff)],
               ),
-              borderRadius: BorderRadius.circular(17),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.language, color: Colors.white, size: 27),
+            child: const Icon(Icons.newspaper, color: Colors.white, size: 24),
           ),
-          const SizedBox(width: 10),
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                'HANDELSWELT',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  height: 1,
-                ),
-              ),
-              Text(
-                'DEALS',
-                style: TextStyle(
-                  color: Color(0xffb9a8ff),
-                  fontSize: 13,
-                  fontStyle: FontStyle.italic,
-                  fontWeight: FontWeight.w900,
-                  height: 1,
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.07),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: Colors.white.withOpacity(0.12)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.notifications_outlined, color: Colors.white70, size: 18),
-                SizedBox(width: 6),
-                Text(
-                  'News',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
+          const SizedBox(width: 12),
+          const Text(
+            "News",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],

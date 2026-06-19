@@ -76,6 +76,30 @@ class InseratFeld extends StatelessWidget {
   }
 }
 
+class InseratZeile extends StatelessWidget {
+  final Widget links;
+  final Widget? rechts;
+
+  const InseratZeile({
+    super.key,
+    required this.links,
+    this.rechts,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (rechts == null) return links;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: links),
+        const SizedBox(width: 10),
+        Expanded(child: rechts!),
+      ],
+    );
+  }
+}
+
 class InseratDropdown extends StatelessWidget {
   final String label;
   final String value;

@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../model/produkt.dart';
 import 'chat_seite.dart';
@@ -191,6 +192,15 @@ class _DetailSeiteState extends State<DetailSeite> {
         backgroundColor: Colors.green,
       ),
     );
+  }
+
+  Future<void> emailSenden() async {
+    final email = widget.produkt.verkaeuferEmail.trim();
+    if (email.isEmpty) return;
+    final uri = Uri(scheme: 'mailto', path: email);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
   }
 
   Future<void> telefonKopieren() async {
@@ -390,6 +400,7 @@ class _DetailSeiteState extends State<DetailSeite> {
       ),
       clipBehavior: Clip.hardEdge,
       child: Stack(
+        fit: StackFit.expand,
         children: [
           PageView.builder(
             itemCount: bilder.length,
@@ -402,34 +413,37 @@ class _DetailSeiteState extends State<DetailSeite> {
               final bild = bilder[index];
               if (bild.isEmpty) return _platzhalterBild(widget.produkt.icon, 80);
 
-              return Image.network(
-                bild,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                errorBuilder: (context, error, stackTrace) {
-                  return _platzhalterBild(widget.produkt.icon, 80);
-                },
+              return SizedBox.expand(
+                child: Image.network(
+                  bild,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return _platzhalterBild(widget.produkt.icon, 80);
+                  },
+                ),
               );
             },
           ),
-          Positioned(
-            left: 14,
-            bottom: 14,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.55),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                "${aktuellesBild + 1}/${bilder.length}",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                ),
+          if (bilder.length > 1)
+            Positioned(
+              bottom: 14,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(bilder.length, (i) => Container(
+                  width: i == aktuellesBild ? 18 : 7,
+                  height: 7,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    color: i == aktuellesBild
+                        ? const Color(0xff5b2cff)
+                        : Colors.white.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                )),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -569,9 +583,9 @@ class _DetailSeiteState extends State<DetailSeite> {
                 ),
                 const SizedBox(height: 7),
                 Text(
-                  widget.produkt.emailSichtbar || istFirma
-                      ? widget.produkt.verkaeuferEmail
-                      : "Kontakt über Handelswelt Chat",
+                  istFirma
+                      ? "Kontakt per E-Mail"
+                      : "Kontakt über Nachrichten",
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -631,49 +645,75 @@ class _DetailSeiteState extends State<DetailSeite> {
   }
 
   Widget _kontaktButtons() {
-    final user = FirebaseAuth.instance.currentUser;
-    final verkaeuferId = widget.produkt.verkaeuferId.trim();
-    final istEigenesInserat = user != null && user.uid == verkaeuferId;
+    final istFirmaKontakt = widget.produkt.typ == "Firma";
 
     return Column(
       children: [
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff5b2cff),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ChatSeite(
-                    verkaeuferId: widget.produkt.verkaeuferId,
-                    verkaeuferEmail: widget.produkt.verkaeuferEmail,
-                    produktId: widget.produkt.id,
-                    produktTitel: widget.produkt.titel,
-                  ),
+        if (istFirmaKontakt && widget.produkt.verkaeuferEmail.trim().isNotEmpty) ...[
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff5b2cff),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(22),
                 ),
-              );
-            },
-            icon: const Icon(
-              Icons.chat_bubble_outline,
-              color: Colors.white,
-            ),
-            label: const Text(
-              "Nachricht senden",
-              style: TextStyle(
+              ),
+              onPressed: emailSenden,
+              icon: const Icon(
+                Icons.email_outlined,
                 color: Colors.white,
-                fontWeight: FontWeight.w900,
+              ),
+              label: const Text(
+                "E-Mail senden",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 10),
+          const SizedBox(height: 10),
+        ] else ...[
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff5b2cff),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(22),
+                ),
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ChatSeite(
+                      verkaeuferId: widget.produkt.verkaeuferId,
+                      verkaeuferEmail: widget.produkt.verkaeuferEmail,
+                      produktId: widget.produkt.id,
+                      produktTitel: widget.produkt.titel,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(
+                Icons.chat_bubble_outline,
+                color: Colors.white,
+              ),
+              label: const Text(
+                "Nachricht senden",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
         SizedBox(
           width: double.infinity,
           height: 52,
@@ -681,7 +721,7 @@ class _DetailSeiteState extends State<DetailSeite> {
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Color(0xff5b2cff)),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(22),
               ),
             ),
             onPressed: inseratTeilen,
@@ -707,7 +747,7 @@ class _DetailSeiteState extends State<DetailSeite> {
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Color(0xff5b2cff)),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(22),
                 ),
               ),
               onPressed: _firmenProfilOeffnen,
@@ -733,7 +773,7 @@ class _DetailSeiteState extends State<DetailSeite> {
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Colors.red),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(22),
               ),
             ),
             onPressed: () {
@@ -770,7 +810,7 @@ class _DetailSeiteState extends State<DetailSeite> {
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(22),
                 ),
               ),
               onPressed: telefonKopieren,

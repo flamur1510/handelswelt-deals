@@ -605,31 +605,7 @@ List<String> detailUnterkategorienFuer(
       }
 
     case "Jobs":
-      switch (unterkategorie) {
-        case "Vollzeit":
-        case "Teilzeit":
-        case "Minijob":
-        case "Lehrstelle":
-        case "Praktikum":
-        case "Freelancer":
-        case "Homeoffice":
-        case "Saisonarbeit":
-          return [
-            "Handwerk",
-            "Büro",
-            "Verkauf",
-            "Gastronomie",
-            "IT",
-            "Pflege",
-            "Bau",
-            "Fahrer",
-            "Lager",
-            "Reinigung",
-            "Sonstiges",
-          ];
-        default:
-          return [];
-      }
+      return [];
 
     case "Dienstleistungen":
       switch (unterkategorie) {

@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Handelswelt</string>
+	<string>Handelswelt Deals</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -65,6 +65,31 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Diese App benötigt Standortzugriff zum Teilen deines Standorts im Chat.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Diese App benötigt Standortzugriff zum Teilen deines Standorts im Chat.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Diese App benötigt Standortzugriff zum Teilen deines Standorts im Chat.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Diese App benötigt Mikrofonzugriff zum Aufnehmen von Sprachnachrichten.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Diese App benötigt Kamerazugriff, um Fotos für deine Inserate aufzunehmen.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Diese App benötigt Zugriff auf deine Fotos, um Bilder für Inserate und dein Profil auszuwählen.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Diese App benötigt Zugriff, um Fotos in deiner Galerie zu speichern.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.273730391475-l2uof7l1mp88mst65am9bub2hu36kg7h</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>

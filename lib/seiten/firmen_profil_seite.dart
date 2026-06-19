@@ -4,9 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../model/produkt.dart';
 import 'detail_seite.dart';
-import 'firma_bewerten_seite.dart';
 import 'firma_melden_seite.dart';
-import 'bewertungen_seite.dart';
 
 class FirmenProfilSeite extends StatefulWidget {
   final String userId;
@@ -155,12 +153,6 @@ class _FirmenProfilSeiteState extends State<FirmenProfilSeite> {
                           const SizedBox(height: 14),
                           _ueberUnsKarte(beschreibung),
                           const SizedBox(height: 14),
-                          _bewertungsBereich(),
-                          const SizedBox(height: 14),
-                          _alleBewertungenButton(),
-                          const SizedBox(height: 12),
-                          _bewertungsButton(context),
-                          const SizedBox(height: 12),
                           _firmaMeldenButton(),
                           const SizedBox(height: 14),
                           _inserateBereich(
@@ -266,7 +258,6 @@ class _FirmenProfilSeiteState extends State<FirmenProfilSeite> {
                     ),
                   ),
                 ],
-                _bewertungImKopf(),
                 const SizedBox(height: 8),
                 _firmenAbzeichenImKopf(firmaVerifiziert),
               ],
@@ -299,60 +290,36 @@ class _FirmenProfilSeiteState extends State<FirmenProfilSeite> {
     required int profilAufrufe,
     required bool istEigenesProfil,
   }) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('bewertungen')
-          .where('verkaeuferId', isEqualTo: widget.userId)
-          .snapshots(),
-      builder: (context, snapshot) {
-        final bewertungen = snapshot.data?.docs ?? [];
-        double summe = 0;
+    final karten = <Widget>[
+      _statKarte(
+        icon: Icons.inventory_2_outlined,
+        wert: '$aktiveInserate',
+        text: 'Aktive Inserate',
+      ),
+      _statKarte(
+        icon: Icons.calendar_month_outlined,
+        wert: mitgliedSeit,
+        text: 'Mitglied seit',
+      ),
+      if (istEigenesProfil)
+        _statKarte(
+          icon: Icons.visibility_outlined,
+          wert: '$profilAufrufe',
+          text: 'Profilaufrufe',
+        ),
+    ];
 
-        for (final doc in bewertungen) {
-          final data = doc.data() as Map<String, dynamic>;
-          final wert = data['sterne'];
-          if (wert is num) summe += wert.toDouble();
-        }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final istSchmal = constraints.maxWidth < 620;
+        final breite = istSchmal
+            ? (constraints.maxWidth - 10) / 2
+            : (constraints.maxWidth - ((karten.length - 1) * 10)) / karten.length;
 
-        final durchschnitt = bewertungen.isEmpty ? '0.0' : (summe / bewertungen.length).toStringAsFixed(1);
-
-        final karten = <Widget>[
-          _statKarte(
-            icon: Icons.inventory_2_outlined,
-            wert: '$aktiveInserate',
-            text: 'Aktive Inserate',
-          ),
-          _statKarte(
-            icon: Icons.star,
-            wert: durchschnitt,
-            text: '${bewertungen.length} Bewertungen',
-          ),
-          _statKarte(
-            icon: Icons.calendar_month_outlined,
-            wert: mitgliedSeit,
-            text: 'Mitglied seit',
-          ),
-          if (istEigenesProfil)
-            _statKarte(
-              icon: Icons.visibility_outlined,
-              wert: '$profilAufrufe',
-              text: 'Profilaufrufe',
-            ),
-        ];
-
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final istSchmal = constraints.maxWidth < 620;
-            final breite = istSchmal
-                ? (constraints.maxWidth - 10) / 2
-                : (constraints.maxWidth - ((karten.length - 1) * 10)) / karten.length;
-
-            return Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: karten.map((karte) => SizedBox(width: breite, child: karte)).toList(),
-            );
-          },
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: karten.map((karte) => SizedBox(width: breite, child: karte)).toList(),
         );
       },
     );
@@ -838,11 +805,7 @@ class _FirmenProfilSeiteState extends State<FirmenProfilSeite> {
     }
 
     final breite = MediaQuery.of(context).size.width;
-    final crossAxisCount = breite >= 1100
-        ? 3
-        : breite >= 720
-            ? 2
-            : 1;
+    final crossAxisCount = breite >= 900 ? 4 : breite >= 600 ? 3 : 2;
 
     return _karte(
       child: Column(
@@ -884,7 +847,7 @@ class _FirmenProfilSeiteState extends State<FirmenProfilSeite> {
                 crossAxisCount: crossAxisCount,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: crossAxisCount == 1 ? 2.95 : 0.82,
+                childAspectRatio: 0.68,
               ),
               itemBuilder: (context, index) => _firmenInseratKarte(context, gefiltert[index].produkt),
             ),
@@ -1024,190 +987,153 @@ class _FirmenProfilSeiteState extends State<FirmenProfilSeite> {
   Widget _firmenInseratKarte(BuildContext context, Produkt produkt) {
     final bild = produkt.bild.trim();
     final preis = _preisAnzeige(produkt);
-    final info = _produktInfoZeile(produkt);
     final vermietung = _istVermietung(produkt);
+    final info = _produktInfoZeile(produkt);
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => DetailSeite(produkt: produkt)));
-      },
+    return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DetailSeite(produkt: produkt))),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xfff7f7fb),
-          borderRadius: BorderRadius.circular(20),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0xffececf4)),
+          boxShadow: const [
+            BoxShadow(color: Color(0x0d000000), blurRadius: 8, offset: Offset(0, 3)),
+          ],
         ),
         clipBehavior: Clip.hardEdge,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final breit = constraints.maxWidth > 430;
-            if (breit) {
-              return Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 4,
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  SizedBox(width: 150, height: double.infinity, child: _firmenInseratBild(produkt, bild, vermietung)),
-                  Expanded(child: _firmenInseratText(produkt, preis, info, vermietung)),
+                  bild.isEmpty
+                      ? Container(
+                          color: const Color(0xfff1edff),
+                          child: Icon(produkt.icon, color: const Color(0xff5b2cff), size: 32),
+                        )
+                      : Image.network(
+                          bild,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: const Color(0xfff1edff),
+                            child: Icon(produkt.icon, color: const Color(0xff5b2cff), size: 32),
+                          ),
+                        ),
+                  Positioned(
+                    left: 6,
+                    top: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: vermietung ? Colors.blue.withOpacity(0.85) : Colors.green.withOpacity(0.85),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        vermietung ? 'Miete' : 'Verkauf',
+                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                  ),
                 ],
-              );
-            }
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: SizedBox(width: double.infinity, child: _firmenInseratBild(produkt, bild, vermietung))),
-                _firmenInseratText(produkt, preis, info, vermietung),
-              ],
-            );
-          },
+              ),
+            ),
+            Expanded(
+              flex: 5,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 7, 8, 7),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      produkt.titel,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xff050b2c),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w900,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      preis,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xff5b2cff),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    if (info.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        info,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xff050b2c),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                    const Spacer(),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on_outlined, size: 11, color: Color(0xff74788d)),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          child: Text(
+                            produkt.ort,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xff74788d),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 3,
+                      children: [
+                        if (produkt.kategorie.trim().isNotEmpty)
+                          _miniChip(produkt.kategorie, const Color(0xfff1edff), const Color(0xff5b2cff)),
+                        if (produkt.unterkategorie.trim().isNotEmpty)
+                          _miniChip(produkt.unterkategorie, const Color(0xffe8f8ee), Colors.green),
+                        if (produkt.zustand.trim().isNotEmpty)
+                          _miniChip(produkt.zustand, const Color(0xfffff6df), Colors.orange),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _firmenInseratBild(Produkt produkt, String bild, bool vermietung) {
-    final child = bild.isEmpty
-        ? Container(
-            color: const Color(0xfff1edff),
-            child: Icon(produkt.icon, color: const Color(0xff5b2cff), size: 42),
-          )
-        : Image.network(
-            bild,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                color: const Color(0xfff1edff),
-                child: Icon(produkt.icon, color: const Color(0xff5b2cff), size: 42),
-              );
-            },
-          );
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        child,
-        Positioned(left: 9, top: 9, child: _bildBadge(vermietung ? 'Vermietung' : 'Verkauf')),
-      ],
-    );
-  }
-
-  Widget _bildBadge(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.72),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900),
-      ),
-    );
-  }
-
-  Widget _firmenInseratText(Produkt produkt, String preis, String info, bool vermietung) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            produkt.titel,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Color(0xff050b2c), fontSize: 15, fontWeight: FontWeight.w900, height: 1.2),
-          ),
-          const SizedBox(height: 7),
-          Text(
-            preis,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Color(0xff5b2cff), fontSize: 16, fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 7),
-          if (info.isNotEmpty)
-            Text(
-              info,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Color(0xff050b2c), fontSize: 12, fontWeight: FontWeight.w700),
-            ),
-          const Spacer(),
-          Row(
-            children: [
-              const Icon(Icons.location_on_outlined, size: 15, color: Color(0xff74788d)),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  produkt.ort,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Color(0xff74788d), fontSize: 12, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              _miniChip(produkt.kategorie, const Color(0xfff1edff), const Color(0xff5b2cff)),
-              _miniChip(
-                vermietung ? 'Vermietung' : 'Verkauf',
-                vermietung ? const Color(0xffeaf7ff) : const Color(0xffe8f8ee),
-                vermietung ? Colors.blue : Colors.green,
-              ),
-              if (produkt.unterkategorie.trim().isNotEmpty) _miniChip(produkt.unterkategorie, const Color(0xffeaf7ff), Colors.blue),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _firmenAbzeichenImKopf(bool firmaVerifiziert) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('bewertungen').where('verkaeuferId', isEqualTo: widget.userId).snapshots(),
-      builder: (context, snapshot) {
-        double summe = 0;
-        final bewertungen = snapshot.data?.docs ?? [];
-
-        for (final doc in bewertungen) {
-          final data = doc.data() as Map<String, dynamic>;
-          final wert = data['sterne'];
-          if (wert is num) summe += wert.toDouble();
-        }
-
-        final anzahlBewertungen = bewertungen.length;
-        final durchschnitt = anzahlBewertungen > 0 ? summe / anzahlBewertungen : 0.0;
-        final istTopBewertet = durchschnitt >= 4.5 && anzahlBewertungen >= 10;
-
-        if (!firmaVerifiziert && !istTopBewertet) return const SizedBox();
-
-        return Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            if (firmaVerifiziert)
-              _abzeichenChip(
-                icon: Icons.verified,
-                text: 'Verifiziert',
-                hintergrund: Colors.white.withOpacity(0.15),
-                iconFarbe: Colors.white,
-                textFarbe: Colors.white,
-              ),
-            if (istTopBewertet)
-              _abzeichenChip(
-                icon: Icons.emoji_events,
-                text: 'Top bewertet',
-                hintergrund: const Color(0xfffff6df),
-                iconFarbe: Colors.orange,
-                textFarbe: const Color(0xff050b2c),
-              ),
-          ],
-        );
-      },
+    if (!firmaVerifiziert) return const SizedBox();
+    return _abzeichenChip(
+      icon: Icons.verified,
+      text: 'Verifiziert',
+      hintergrund: Colors.white.withOpacity(0.15),
+      iconFarbe: Colors.white,
+      textFarbe: Colors.white,
     );
   }
 
@@ -1235,398 +1161,11 @@ class _FirmenProfilSeiteState extends State<FirmenProfilSeite> {
     );
   }
 
-  Widget _bewertungImKopf() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('bewertungen').where('verkaeuferId', isEqualTo: widget.userId).snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox();
-        final bewertungen = snapshot.data!.docs;
-        if (bewertungen.isEmpty) return const SizedBox();
-
-        double summe = 0;
-        for (final doc in bewertungen) {
-          final data = doc.data() as Map<String, dynamic>;
-          final wert = data['sterne'];
-          if (wert is num) summe += wert.toDouble();
-        }
-
-        final durchschnitt = (summe / bewertungen.length).toStringAsFixed(1);
-
-        return Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.star, color: Colors.orange, size: 17),
-                const SizedBox(width: 5),
-                Text(
-                  '$durchschnitt (${bewertungen.length} Bewertungen)',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<bool> _hatKontaktMitFirma() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return false;
-    if (user.uid == widget.userId) return false;
-
-    final chatSnapshot = await FirebaseFirestore.instance
-        .collection('chats')
-        .where('teilnehmer', arrayContains: user.uid)
-        .get();
-
-    for (final doc in chatSnapshot.docs) {
-      final daten = doc.data();
-      final teilnehmer = List<String>.from(daten['teilnehmer'] ?? []);
-      if (teilnehmer.contains(widget.userId)) return true;
-    }
-
-    return false;
-  }
-
-  Widget _alleBewertungenButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: OutlinedButton.icon(
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xff5b2cff)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        ),
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => BewertungenSeite(verkaeuferId: widget.userId)));
-        },
-        icon: const Icon(Icons.rate_review_outlined, color: Color(0xff5b2cff)),
-        label: const Text(
-          'Alle Bewertungen ansehen',
-          style: TextStyle(color: Color(0xff5b2cff), fontWeight: FontWeight.w900, fontSize: 16),
-        ),
-      ),
-    );
-  }
-
-  Widget _bewertungsButton(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: _hatKontaktMitFirma(),
-      builder: (context, snapshot) {
-        final user = FirebaseAuth.instance.currentUser;
-
-        if (user == null) {
-          return _hinweisBewertung(icon: Icons.lock_outline, text: 'Bitte einloggen, um diese Firma bewerten zu können.');
-        }
-        if (user.uid == widget.userId) {
-          return _hinweisBewertung(icon: Icons.info_outline, text: 'Du kannst deine eigene Firma nicht bewerten.');
-        }
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Container(
-            width: double.infinity,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xffececf4)),
-            ),
-            child: const Center(child: CircularProgressIndicator(color: Color(0xff5b2cff))),
-          );
-        }
-
-        final hatKontakt = snapshot.data ?? false;
-        if (!hatKontakt) {
-          return _hinweisBewertung(icon: Icons.chat_bubble_outline, text: 'Kontakt aufnehmen, um diese Firma bewerten zu können.');
-        }
-
-        return SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton.icon(
-            icon: const Icon(Icons.star, color: Colors.white),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff5b2cff),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => FirmaBewertenSeite(firmaId: widget.userId, firmaName: widget.firmenname),
-                ),
-              );
-            },
-            label: const Text(
-              'Firma bewerten',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _hinweisBewertung({required IconData icon, required String text}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xfffff6df),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xffffe5a8)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.orange),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(color: Color(0xff050b2c), fontWeight: FontWeight.w800, height: 1.35),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _bewertungsBereich() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('bewertungen').where('verkaeuferId', isEqualTo: widget.userId).snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return _karte(child: const Center(child: CircularProgressIndicator(color: Color(0xff5b2cff))));
-        final bewertungen = snapshot.data!.docs;
-
-        if (bewertungen.isEmpty) {
-          return _karte(
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Bewertungen', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
-                SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(Icons.star_border, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Noch keine Bewertungen vorhanden.',
-                        style: TextStyle(color: Color(0xff74788d), fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        }
-
-        final sterneListe = <int>[];
-        for (final doc in bewertungen) {
-          final data = doc.data() as Map<String, dynamic>;
-          final wert = data['sterne'];
-          if (wert is int) sterneListe.add(wert);
-          if (wert is double) sterneListe.add(wert.round());
-          if (wert is num && wert is! int && wert is! double) sterneListe.add(wert.round());
-        }
-
-        final summe = sterneListe.fold<int>(0, (a, b) => a + b);
-        final durchschnitt = sterneListe.isEmpty ? 0.0 : summe / sterneListe.length;
-        final durchschnittText = durchschnitt.toStringAsFixed(1);
-
-        final sortierteBewertungen = bewertungen.toList();
-        sortierteBewertungen.sort((a, b) {
-          final aData = a.data() as Map<String, dynamic>;
-          final bData = b.data() as Map<String, dynamic>;
-          final aZeit = aData['erstelltAm'];
-          final bZeit = bData['erstelltAm'];
-          if (aZeit is Timestamp && bZeit is Timestamp) return bZeit.compareTo(aZeit);
-          return 0;
-        });
-
-        return _karte(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Bewertungen', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 14),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xfffff6df),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xffffe5a8)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.star, color: Colors.orange, size: 34),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '$durchschnittText / 5',
-                            style: const TextStyle(color: Color(0xff050b2c), fontSize: 24, fontWeight: FontWeight.w900),
-                          ),
-                          Text(
-                            '${bewertungen.length} Bewertungen',
-                            style: const TextStyle(color: Color(0xff74788d), fontWeight: FontWeight.w700),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      _sterneText(durchschnitt.round()),
-                      style: const TextStyle(color: Colors.orange, fontSize: 18, fontWeight: FontWeight.w900),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              _bewertungsStatistik(sterneListe),
-              const SizedBox(height: 14),
-              Column(
-                children: sortierteBewertungen.take(8).map((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final sterne = data['sterne'] is int ? data['sterne'] as int : (data['sterne'] is num ? (data['sterne'] as num).round() : 0);
-                  final text = (data['text'] ?? data['kommentar'] ?? '').toString();
-                  final email = (data['bewerterEmail'] ?? 'Nutzer').toString();
-                  final erstelltAm = data['erstelltAm'];
-                  final datum = erstelltAm is Timestamp ? _datumKurz(erstelltAm) : '';
-
-                  return Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xfff7f7fb),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xffececf4)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(_sterneText(sterne), style: const TextStyle(color: Colors.orange, fontSize: 16, fontWeight: FontWeight.w900)),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _bewertungName(email),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: Color(0xff74788d), fontSize: 12, fontWeight: FontWeight.w700),
-                              ),
-                            ),
-                            if (datum.isNotEmpty)
-                              Text(
-                                datum,
-                                style: const TextStyle(color: Color(0xff74788d), fontSize: 12, fontWeight: FontWeight.w700),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 7),
-                        _miniChip('✔ Kontakt bestätigt', const Color(0xffe8f8ee), Colors.green),
-                        if (text.trim().isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            text,
-                            style: const TextStyle(color: Color(0xff050b2c), height: 1.35, fontWeight: FontWeight.w700),
-                          ),
-                        ],
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _bewertungsStatistik(List<int> sterneListe) {
-    final gesamt = sterneListe.length;
-    if (gesamt == 0) return const SizedBox();
-
-    return Column(
-      children: List.generate(5, (index) {
-        final sterne = 5 - index;
-        final anzahl = sterneListe.where((e) => e == sterne).length;
-        final faktor = gesamt == 0 ? 0.0 : anzahl / gesamt;
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 7),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 55,
-                child: Text('$sterne ★', style: const TextStyle(color: Color(0xff050b2c), fontWeight: FontWeight.w800)),
-              ),
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: LinearProgressIndicator(
-                    value: faktor,
-                    minHeight: 9,
-                    backgroundColor: const Color(0xffececf4),
-                    color: Colors.orange,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 28,
-                child: Text(
-                  '$anzahl',
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(color: Color(0xff74788d), fontWeight: FontWeight.w800),
-                ),
-              ),
-            ],
-          ),
-        );
-      }),
-    );
-  }
-
-  String _sterneText(int anzahl) {
-    final sichereAnzahl = anzahl.clamp(0, 5);
-    return '★' * sichereAnzahl + '☆' * (5 - sichereAnzahl);
-  }
-
   String _mitgliedSeitText(Timestamp timestamp) {
     final datum = timestamp.toDate();
     final monat = datum.month.toString().padLeft(2, '0');
     final jahr = datum.year.toString();
     return '$monat.$jahr';
-  }
-
-  String _datumKurz(Timestamp timestamp) {
-    final datum = timestamp.toDate();
-    final tag = datum.day.toString().padLeft(2, '0');
-    final monat = datum.month.toString().padLeft(2, '0');
-    final jahr = datum.year.toString();
-    return '$tag.$monat.$jahr';
-  }
-
-  String _bewertungName(String email) {
-    final sauber = email.trim();
-    if (sauber.isEmpty || !sauber.contains('@')) return 'Nutzer';
-    final name = sauber.split('@').first;
-    if (name.length <= 2) return 'Nutzer';
-    return '${name.substring(0, 2)}***';
   }
 
   Widget _karte({required Widget child}) {
@@ -1676,13 +1215,13 @@ class _FirmenProfilSeiteState extends State<FirmenProfilSeite> {
   Widget _miniChip(String text, Color bg, Color fg) {
     if (text.trim().isEmpty) return const SizedBox();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(30)),
       child: Text(
         text,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w900),
+        style: TextStyle(color: fg, fontSize: 9.5, fontWeight: FontWeight.w900),
       ),
     );
   }

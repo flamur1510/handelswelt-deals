@@ -559,17 +559,13 @@ class _RegistrierungSeiteState extends State<RegistrierungSeite> {
   Widget _kopf() {
     return Column(
       children: [
-        Container(
-          width: 66,
-          height: 66,
-          decoration: BoxDecoration(
-            color: const Color(0xfff1edff),
-            borderRadius: BorderRadius.circular(22),
-          ),
-          child: const Icon(
-            Icons.shopping_cart_outlined,
-            color: Color(0xff5b2cff),
-            size: 34,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(13),
+          child: Image.asset(
+            'assets/logo/image_neu2.png',
+            width: 66,
+            height: 66,
+            fit: BoxFit.contain,
           ),
         ),
         const SizedBox(height: 12),

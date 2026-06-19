@@ -379,17 +379,13 @@ class _LoginSeiteState extends State<LoginSeite> {
   Widget _kopf() {
     return Column(
       children: [
-        Container(
-          width: 68,
-          height: 68,
-          decoration: BoxDecoration(
-            color: const Color(0xfff1edff),
-            borderRadius: BorderRadius.circular(22),
-          ),
-          child: const Icon(
-            Icons.language,
-            color: Color(0xff5b2cff),
-            size: 35,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Image.asset(
+            'assets/logo/image_neu2.png',
+            width: 68,
+            height: 68,
+            fit: BoxFit.contain,
           ),
         ),
         const SizedBox(height: 12),

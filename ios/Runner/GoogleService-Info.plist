@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>273730391475-l2uof7l1mp88mst65am9bub2hu36kg7h.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.273730391475-l2uof7l1mp88mst65am9bub2hu36kg7h</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBOaHxUSDclEAMWue_MSml5IvaJ4u_GEq8</string>
+	<key>GCM_SENDER_ID</key>
+	<string>273730391475</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.flamur.deals</string>
+	<key>PROJECT_ID</key>
+	<string>handelswelt-703b0</string>
+	<key>STORAGE_BUCKET</key>
+	<string>handelswelt-703b0.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:273730391475:ios:d7cd72a5f13947256d4fc6</string>
+</dict>
+</plist>

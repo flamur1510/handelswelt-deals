@@ -774,49 +774,29 @@ class _KategorienSeiteState extends State<KategorienSeite> {
       ),
       child: Row(
         children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: _zurStartseiteSpringen,
-            child: Row(
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xff5b2cff), Color(0xff7a5cff)],
-                    ),
-                    borderRadius: BorderRadius.circular(17),
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xff5b2cff), Color(0xff7a5cff)],
                   ),
-                  child: const Icon(Icons.language, color: Colors.white, size: 27),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(width: 10),
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      "HANDELSWELT",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        height: 1,
-                      ),
-                    ),
-                    Text(
-                      "DEALS",
-                      style: TextStyle(
-                        color: Color(0xffb9a8ff),
-                        fontSize: 13,
-                        fontStyle: FontStyle.italic,
-                        fontWeight: FontWeight.w900,
-                        height: 1,
-                      ),
-                    ),
-                  ],
+                child: const Icon(Icons.grid_view, color: Colors.white, size: 22),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                "Kategorien",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           const Spacer(),
           if (breit) ...[
@@ -1181,7 +1161,7 @@ class _KategorienSeiteState extends State<KategorienSeite> {
           child: Text(
             "$aktive aktiv",
             style: const TextStyle(
-              color: Color(0xff050b2c),
+              color: Colors.white,
               fontSize: 11,
               fontWeight: FontWeight.w900,
             ),
@@ -2040,6 +2020,7 @@ class _KategorienSeiteState extends State<KategorienSeite> {
         );
       },
       child: Container(
+        clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
@@ -2218,15 +2199,14 @@ class _KategorienSeiteState extends State<KategorienSeite> {
                       ],
                     ),
                     const SizedBox(height: 7),
-                    Wrap(
-                      spacing: 5,
-                      runSpacing: 5,
+                    Row(
                       children: [
                         _miniChip(
                           _anzeigenId(produkt),
                           const Color(0xfff4f4f8),
                           const Color(0xff74788d),
                         ),
+                        const SizedBox(width: 5),
                         _miniChip(
                           produkt.firmaVerifiziert
                               ? "✔ Firma"

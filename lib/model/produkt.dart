@@ -88,6 +88,7 @@ class Produkt {
   String garantie;
 
   // Jobs
+  String jobBerufsbezeichnung;
   String jobGehalt;
   String jobArbeitsort;
   String jobErfahrung;
@@ -204,6 +205,7 @@ class Produkt {
     this.zustand = "",
     this.hersteller = "",
     this.garantie = "",
+    this.jobBerufsbezeichnung = "",
     this.jobGehalt = "",
     this.jobArbeitsort = "",
     this.jobErfahrung = "",
@@ -317,6 +319,7 @@ class Produkt {
       "hersteller": hersteller,
       "garantie": garantie,
 
+      "jobBerufsbezeichnung": jobBerufsbezeichnung,
       "jobGehalt": jobGehalt,
       "jobArbeitsort": jobArbeitsort,
       "jobErfahrung": jobErfahrung,
@@ -441,6 +444,7 @@ class Produkt {
       hersteller: data["hersteller"] ?? "",
       garantie: data["garantie"] ?? "",
 
+      jobBerufsbezeichnung: data["jobBerufsbezeichnung"] ?? "",
       jobGehalt: data["jobGehalt"] ?? "",
       jobArbeitsort: data["jobArbeitsort"] ?? "",
       jobErfahrung: data["jobErfahrung"] ?? "",

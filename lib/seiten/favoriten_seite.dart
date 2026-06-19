@@ -199,12 +199,23 @@ class _FavoritenSeiteState extends State<FavoritenSeite> {
 
   Future<void> favoritEntfernen(
     BuildContext context,
-    Map<String, dynamic> fav,
-  ) async {
+    Map<String, dynamic> fav, {
+    bool ohneDialog = false,
+  }) async {
     final favoritDocId = wert(fav, ["_favoritDocId"]);
     final titel = wert(fav, ["produktTitel", "titel", "title"]);
 
     if (favoritDocId.isEmpty) return;
+
+    if (ohneDialog) {
+      await FirebaseFirestore.instance.collection("favoriten").doc(favoritDocId).delete();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Favorit wurde entfernt.")),
+        );
+      }
+      return;
+    }
 
     final bestaetigt = await showDialog<bool>(
       context: context,
@@ -421,6 +432,8 @@ class _FavoritenSeiteState extends State<FavoritenSeite> {
                     text: "Keine passenden Favoriten gefunden.",
                     icon: Icons.search_off,
                   )
+                else if (ausgewaehlteKategorie == "Alle")
+                  _gruppiertNachKategorie(context, favoriten, breit)
                 else
                   GridView.builder(
                     itemCount: favoriten.length,
@@ -430,7 +443,7 @@ class _FavoritenSeiteState extends State<FavoritenSeite> {
                       crossAxisCount: breit ? 4 : 2,
                       mainAxisSpacing: 14,
                       crossAxisSpacing: 14,
-                      childAspectRatio: breit ? 0.88 : 0.68,
+                      childAspectRatio: breit ? 0.88 : 0.72,
                     ),
                     itemBuilder: (context, index) {
                       return _favoritKarte(context, favoriten[index]);
@@ -467,7 +480,7 @@ class _FavoritenSeiteState extends State<FavoritenSeite> {
               gradient: const LinearGradient(
                 colors: [Color(0xff5b2cff), Color(0xff7a5cff)],
               ),
-              borderRadius: BorderRadius.circular(17),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
               Icons.favorite,
@@ -504,26 +517,13 @@ class _FavoritenSeiteState extends State<FavoritenSeite> {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.08),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(color: Colors.white.withOpacity(0.12)),
             ),
-            child: const Row(
-              children: [
-                Icon(Icons.bookmark_added_outlined, color: Colors.white70, size: 17),
-                SizedBox(width: 6),
-                Text(
-                  "Gespeichert",
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
+            child: const Icon(Icons.bookmark_added_outlined, color: Colors.white70, size: 20),
           ),
         ],
       ),
@@ -727,6 +727,74 @@ class _FavoritenSeiteState extends State<FavoritenSeite> {
     );
   }
 
+  Widget _gruppiertNachKategorie(BuildContext context, List<Map<String, dynamic>> favoriten, bool breit) {
+    final Map<String, List<Map<String, dynamic>>> gruppen = {};
+    for (final fav in favoriten) {
+      final kat = kategorieAnzeige(wert(fav, ["produktKategorie", "kategorie", "category"]));
+      final key = kat.isEmpty ? "Sonstige" : kat;
+      gruppen.putIfAbsent(key, () => []).add(fav);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: gruppen.entries.map((entry) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10, top: 6),
+              child: Row(
+                children: [
+                  Icon(iconFuerKategorie(entry.key), color: const Color(0xff5b2cff), size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    entry.key,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xff050b2c),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xfff1edff),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      "${entry.value.length}",
+                      style: const TextStyle(
+                        color: Color(0xff5b2cff),
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            GridView.builder(
+              itemCount: entry.value.length,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: breit ? 4 : 2,
+                mainAxisSpacing: 14,
+                crossAxisSpacing: 14,
+                childAspectRatio: breit ? 0.88 : 0.72,
+              ),
+              itemBuilder: (context, index) {
+                return _favoritKarte(context, entry.value[index]);
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
   Widget _favoritKarte(BuildContext context, Map<String, dynamic> fav) {
     final titel = wert(fav, ["produktTitel", "titel", "title"]);
     final preis = wert(fav, ["produktPreis", "preis", "price"]);
@@ -742,77 +810,79 @@ class _FavoritenSeiteState extends State<FavoritenSeite> {
         ? "Preis auf Anfrage"
         : (preis.endsWith("€") ? preis : "$preis €");
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(22),
-      onTap: () => detailOeffnen(context, fav),
-      child: Container(
+    final favoritDocId = wert(fav, ["_favoritDocId"]);
+
+    return Dismissible(
+      key: Key(favoritDocId.isEmpty ? titel : favoritDocId),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Colors.red,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xffececf4)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x10000000),
-              blurRadius: 14,
-              offset: Offset(0, 7),
-            ),
-          ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(22),
-                    topRight: Radius.circular(22),
+        child: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
+      ),
+      confirmDismiss: (_) => favoritEntfernen(context, fav, ohneDialog: true).then((_) => false),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: () => detailOeffnen(context, fav),
+        child: Container(
+          clipBehavior: Clip.hardEdge,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xffececf4)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x10000000),
+                blurRadius: 14,
+                offset: Offset(0, 7),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(22),
+                      topRight: Radius.circular(22),
+                    ),
+                    child: bild.isEmpty
+                        ? _platzhalter(kategorie)
+                        : Image.network(
+                            bild,
+                            width: double.infinity,
+                            height: 110,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _platzhalter(kategorie);
+                            },
+                          ),
                   ),
-                  child: bild.isEmpty
-                      ? _platzhalter(kategorie)
-                      : Image.network(
-                          bild,
-                          width: double.infinity,
-                          height: 150,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _platzhalter(kategorie);
-                          },
-                        ),
-                ),
-                Positioned(
-                  top: 9,
-                  right: 9,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(18),
-                    onTap: () => favoritEntfernen(context, fav),
-                    child: const CircleAvatar(
-                      radius: 17,
-                      backgroundColor: Colors.white,
-                      child: Icon(
-                        Icons.favorite,
-                        color: Colors.red,
-                        size: 19,
+                  Positioned(
+                    top: 9,
+                    right: 9,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () => favoritEntfernen(context, fav),
+                      child: const CircleAvatar(
+                        radius: 17,
+                        backgroundColor: Colors.white,
+                        child: Icon(Icons.favorite, color: Colors.red, size: 19),
                       ),
                     ),
                   ),
-                ),
-                Positioned(
-                  top: 10,
-                  left: 10,
-                  child: _bildBadge(kategorie.isEmpty ? "Deal" : kategorie),
-                ),
-                Positioned(
-                  bottom: 10,
-                  left: 10,
-                  child: _bildBadge(vermietung ? "Vermietung" : "Verkauf"),
-                ),
-              ],
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -821,59 +891,51 @@ class _FavoritenSeiteState extends State<FavoritenSeite> {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Color(0xff050b2c),
-                        fontSize: 15,
+                        fontSize: 13,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 7),
+                    const SizedBox(height: 4),
                     Text(
                       preisText,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Color(0xff5b2cff),
-                        fontSize: 17,
+                        fontSize: 13,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 7),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 14,
-                          color: Color(0xff74788d),
-                        ),
-                        const SizedBox(width: 4),
+                        const Icon(Icons.location_on_outlined, size: 12, color: Color(0xff74788d)),
+                        const SizedBox(width: 3),
                         Expanded(
                           child: Text(
                             ort,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xff74788d),
-                              fontSize: 12,
-                            ),
+                            style: const TextStyle(color: Color(0xff74788d), fontSize: 11),
                           ),
                         ),
                       ],
                     ),
-                    const Spacer(),
-                    Wrap(
-                      spacing: 7,
-                      runSpacing: 6,
+                    const SizedBox(height: 4),
+                    Row(
                       children: [
-                        _chip("Gespeichert"),
-                        if (firmaVerifiziert) _chip("✔ Verifiziert"),
-                        if (kategorie.isNotEmpty) _chip(kategorie),
-                        _chip(vermietung ? "Vermietung" : "Verkauf"),
+                        if (kategorie.isNotEmpty) ...[
+                          _chip(kategorie),
+                          const SizedBox(width: 4),
+                        ],
+                        _chip(vermietung ? "Miete" : "Kauf"),
                       ],
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -881,7 +943,7 @@ class _FavoritenSeiteState extends State<FavoritenSeite> {
 
   Widget _platzhalter(String kategorie) {
     return Container(
-      height: 150,
+      height: 110,
       width: double.infinity,
       color: const Color(0xfff1edff),
       child: Icon(

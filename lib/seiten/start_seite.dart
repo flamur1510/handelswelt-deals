@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../model/produkt.dart';
 import '../kategorien_daten/kategorien.dart';
@@ -46,6 +47,11 @@ class _StartSeiteState extends State<StartSeite> {
   String sortierung = "Neueste zuerst";
   String umkreisFilter = "Österreichweit";
 
+  bool standortAktiv = false;
+  bool standortLaedt = false;
+  double? meineLatitude;
+  double? meineLongitude;
+
   final sucheController = TextEditingController();
   final ortController = TextEditingController();
   final preisVonController = TextEditingController();
@@ -63,6 +69,7 @@ class _StartSeiteState extends State<StartSeite> {
   final bootLaengeVonController = TextEditingController();
   final bootLaengeBisController = TextEditingController();
   final betriebsstundenBisController = TextEditingController();
+  final berufsbezeichnungController = TextEditingController();
   final ScrollController scrollController = ScrollController();
 
   final sortierungen = const [
@@ -214,6 +221,7 @@ class _StartSeiteState extends State<StartSeite> {
     bootLaengeVonController.dispose();
     bootLaengeBisController.dispose();
     betriebsstundenBisController.dispose();
+    berufsbezeichnungController.dispose();
     super.dispose();
   }
 
@@ -610,6 +618,18 @@ class _StartSeiteState extends State<StartSeite> {
       if (betriebsstundenBis > 0 && zahl(produkt.baumaschinenBetriebsstunden) > betriebsstundenBis) return false;
     }
 
+    if (produkt.kategorie == "Jobs") {
+      final berufssuche = berufsbezeichnungController.text.trim().toLowerCase();
+      if (berufssuche.isNotEmpty) {
+        final berufsfeld = [
+          produkt.jobBerufsbezeichnung,
+          produkt.titel,
+          produkt.unterkategorie,
+        ].join(" ").toLowerCase();
+        if (!berufsfeld.contains(berufssuche)) return false;
+      }
+    }
+
     return true;
   }
 
@@ -685,6 +705,15 @@ class _StartSeiteState extends State<StartSeite> {
   }
 
   bool ortPasst(Produkt produkt) {
+    if (standortAktiv && meineLatitude != null && meineLongitude != null) {
+      final radius = umkreisKm();
+      if (radius <= 0) return true;
+      final produktLat = produkt.latitude;
+      final produktLon = produkt.longitude;
+      if (produktLat == 0 && produktLon == 0) return true;
+      return entfernungKm(meineLatitude!, meineLongitude!, produktLat, produktLon) <= radius;
+    }
+
     final ortText = ortController.text.trim().toLowerCase();
     if (ortText.isEmpty) return true;
 
@@ -764,6 +793,7 @@ class _StartSeiteState extends State<StartSeite> {
       bootLaengeVonController.clear();
       bootLaengeBisController.clear();
       betriebsstundenBisController.clear();
+      berufsbezeichnungController.clear();
       ausgewaehlteKategorie = "Alle";
       filterUnterkategorie = "Alle";
       filterDetailUnterkategorie = "Alle";
@@ -776,6 +806,62 @@ class _StartSeiteState extends State<StartSeite> {
       filterBalkon = "Alle";
       filterGarage = "Alle";
       sortierung = "Neueste zuerst";
+      umkreisFilter = "Österreichweit";
+      standortAktiv = false;
+      meineLatitude = null;
+      meineLongitude = null;
+    });
+  }
+
+  Future<void> standortAktivieren(void Function(VoidCallback) setzen) async {
+    setzen(() => standortLaedt = true);
+    try {
+      final dienstAktiv = await Geolocator.isLocationServiceEnabled();
+      if (!dienstAktiv) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bitte Standort am Gerät aktivieren.')),
+        );
+        return;
+      }
+      LocationPermission erlaubnis = await Geolocator.checkPermission();
+      if (erlaubnis == LocationPermission.denied) {
+        erlaubnis = await Geolocator.requestPermission();
+      }
+      if (erlaubnis == LocationPermission.denied ||
+          erlaubnis == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Standort-Berechtigung wurde nicht erlaubt.')),
+        );
+        return;
+      }
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      if (!mounted) return;
+      setzen(() {
+        meineLatitude = position.latitude;
+        meineLongitude = position.longitude;
+        standortAktiv = true;
+        if (umkreisFilter == "Österreichweit") umkreisFilter = "25 km";
+        ortController.clear();
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Standort Fehler: $e')),
+      );
+    } finally {
+      if (mounted) setzen(() => standortLaedt = false);
+    }
+  }
+
+  void standortDeaktivieren(void Function(VoidCallback) setzen) {
+    setzen(() {
+      standortAktiv = false;
+      meineLatitude = null;
+      meineLongitude = null;
       umkreisFilter = "Österreichweit";
     });
   }
@@ -838,31 +924,13 @@ class _StartSeiteState extends State<StartSeite> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: breit ? 52 : 48,
-                  height: breit ? 52 : 48,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xff050b2c),
-                        Color(0xff5b2cff),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x335b2cff),
-                        blurRadius: 14,
-                        offset: Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.language,
-                    color: Colors.white,
-                    size: 30,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(breit ? 9 : 8),
+                  child: Image.asset(
+                    'assets/logo/image_neu2.png',
+                    width: breit ? 46 : 38,
+                    height: breit ? 46 : 38,
+                    fit: BoxFit.contain,
                   ),
                 ),
                 const SizedBox(width: 9),
@@ -1475,6 +1543,77 @@ class _StartSeiteState extends State<StartSeite> {
                           },
                         ),
                       ],
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: ortController,
+                        onChanged: (_) {
+                          neuSetzen(() {
+                            standortAktiv = false;
+                            meineLatitude = null;
+                            meineLongitude = null;
+                          });
+                        },
+                        decoration: InputDecoration(
+                          labelText: "Ort / Stadt",
+                          prefixIcon: const Icon(Icons.location_on_outlined, color: Color(0xff5b2cff)),
+                          suffixIcon: ortController.text.trim().isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    neuSetzen(() {
+                                      ortController.clear();
+                                    });
+                                  },
+                                )
+                              : null,
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: standortAktiv
+                                ? const Color(0xff5b2cff)
+                                : Colors.white,
+                            foregroundColor: standortAktiv
+                                ? Colors.white
+                                : const Color(0xff5b2cff),
+                            side: const BorderSide(color: Color(0xff5b2cff)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          ),
+                          onPressed: standortLaedt
+                              ? null
+                              : (standortAktiv
+                                  ? () => standortDeaktivieren(neuSetzen)
+                                  : () => standortAktivieren(neuSetzen)),
+                          icon: standortLaedt
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : Icon(standortAktiv
+                                  ? Icons.location_on
+                                  : Icons.my_location_outlined),
+                          label: Text(
+                            standortLaedt
+                                ? 'Standort wird geholt...'
+                                : (standortAktiv
+                                    ? 'Mein Standort aktiv'
+                                    : 'In meiner Nähe'),
+                            style: const TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 10),
                       _suchDropdown(
                         label: "Umkreis",
@@ -2182,6 +2321,10 @@ class _StartSeiteState extends State<StartSeite> {
     return ausgewaehlteKategorie.toLowerCase().contains("baumaschine");
   }
 
+  bool _istJobsFilterAktiv() {
+    return ausgewaehlteKategorie.toLowerCase().contains("job");
+  }
+
   bool _istLandwirtschaftFilterAktiv() {
     return ausgewaehlteKategorie.toLowerCase().contains("landwirtschaft");
   }
@@ -2389,6 +2532,28 @@ class _StartSeiteState extends State<StartSeite> {
           const SizedBox(height: 10),
           _preisFeld(betriebsstundenBisController, "Betriebsstunden bis"),
         ],
+      );
+    }
+
+    if (_istJobsFilterAktiv()) {
+      return TextField(
+        controller: berufsbezeichnungController,
+        onChanged: (_) => neuSetzen(() {}),
+        decoration: InputDecoration(
+          labelText: "Berufsbezeichnung / Branche",
+          prefixIcon: const Icon(Icons.work_outline, color: Color(0xff5b2cff)),
+          suffixIcon: berufsbezeichnungController.text.trim().isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () => neuSetzen(() => berufsbezeichnungController.clear()),
+                )
+              : null,
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
       );
     }
 
@@ -2644,30 +2809,27 @@ class _StartSeiteState extends State<StartSeite> {
         child: Stack(
           children: [
             Positioned(
-              right: -18,
-              top: -28,
-              child: Icon(
-                Icons.language,
-                color: Colors.white.withOpacity(0.08),
-                size: breit ? 138 : 118,
+              right: -10,
+              top: -10,
+              child: Opacity(
+                opacity: 0.12,
+                child: Image.asset(
+                  'assets/logo/image_neu2.png',
+                  width: breit ? 130 : 110,
+                  height: breit ? 130 : 110,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
             Row(
               children: [
-                Container(
-                  width: breit ? 58 : 50,
-                  height: breit ? 58 : 50,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.14),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.18),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.local_offer_outlined,
-                    color: Colors.white,
-                    size: 28,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(breit ? 12 : 11),
+                  child: Image.asset(
+                    'assets/logo/image_neu2.png',
+                    width: breit ? 62 : 54,
+                    height: breit ? 62 : 54,
+                    fit: BoxFit.contain,
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -2676,16 +2838,19 @@ class _StartSeiteState extends State<StartSeite> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        "Entdecke echte Top-Deals",
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: breit ? 24 : 19,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.3,
-                          height: 1,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          "Entdecke echte Top-Deals",
+                          maxLines: 1,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: breit ? 24 : 19,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.3,
+                            height: 1,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 7),
@@ -3380,6 +3545,7 @@ class _StartSeiteState extends State<StartSeite> {
           ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -3428,7 +3594,7 @@ class _StartSeiteState extends State<StartSeite> {
                 ),
               ],
             ),
-            const Spacer(),
+            const SizedBox(height: 10),
             Row(
               children: [
                 const Icon(Icons.star, color: Colors.orange, size: 20),
@@ -3795,148 +3961,106 @@ class _StartSeiteState extends State<StartSeite> {
                       ),
                     ),
                   ),
-                  Positioned(
-                    left: 10,
-                    right: 10,
-                    bottom: 10,
-                    child: Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: chips
-                          .map(
-                            (chip) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.63),
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              child: Text(
-                                chip,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
                 ],
               ),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    produkt.titel,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: const Color(0xff050b2c),
+                      fontSize: breit ? 16 : 14,
+                      fontWeight: FontWeight.w900,
+                      height: 1.15,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    preisText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: const Color(0xff5b2cff),
+                      fontSize: breit ? 18 : 16,
+                      fontWeight: FontWeight.w900,
+                      height: 1,
+                    ),
+                  ),
+                  if (info1.isNotEmpty) ...[
+                    const SizedBox(height: 6),
                     Text(
-                      produkt.titel,
+                      info1,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: const Color(0xff050b2c),
-                        fontSize: breit ? 16 : 14,
-                        fontWeight: FontWeight.w900,
+                      style: const TextStyle(
+                        color: Color(0xff050b2c),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
                         height: 1.05,
                       ),
                     ),
-                    const SizedBox(height: 5),
+                  ],
+                  if (info2.isNotEmpty) ...[
+                    const SizedBox(height: 4),
                     Text(
-                      preisText,
+                      info2,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: const Color(0xff5b2cff),
-                        fontSize: breit ? 18 : 16,
-                        fontWeight: FontWeight.w900,
-                        height: 1,
+                      style: const TextStyle(
+                        color: Color(0xff74788d),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        height: 1.05,
                       ),
-                    ),
-                    if (info1.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        info1,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xff050b2c),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          height: 1.05,
-                        ),
-                      ),
-                    ],
-                    if (info2.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        info2,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xff74788d),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          height: 1.05,
-                        ),
-                      ),
-                    ],
-                    const Spacer(),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 14,
-                          color: Color(0xff74788d),
-                        ),
-                        const SizedBox(width: 3),
-                        Expanded(
-                          child: Text(
-                            "${produkt.ort.isEmpty ? "Österreich" : produkt.ort}$entfernungText",
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xff74788d),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 7),
-                    Wrap(
-                      spacing: 5,
-                      runSpacing: 5,
-                      children: [
-                        _miniChip(
-                          _anzeigenId(produkt),
-                          const Color(0xfff4f4f8),
-                          const Color(0xff74788d),
-                        ),
-                        if (produkt.firmaVerifiziert)
-                          _miniChip(
-                            "✔ Firma",
-                            const Color(0xffffefe0),
-                            Colors.orange,
-                          )
-                        else
-                          _miniChip(
-                            produkt.typ == "Firma" ? "Firma" : "Privat",
-                            const Color(0xffe8f8ee),
-                            Colors.green,
-                          ),
-                      ],
                     ),
                   ],
-                ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on_outlined,
+                        size: 13,
+                        color: Color(0xff74788d),
+                      ),
+                      const SizedBox(width: 3),
+                      Expanded(
+                        child: Text(
+                          "${produkt.ort.isEmpty ? "Österreich" : produkt.ort}$entfernungText",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xff74788d),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      _miniChip(
+                        produkt.typ == "Firma" ? "Firma" : "Privat",
+                        const Color(0xffe8f8ee),
+                        Colors.green,
+                      ),
+                      const SizedBox(width: 5),
+                      _miniChip(
+                        _anzeigenId(produkt),
+                        const Color(0xfff4f4f8),
+                        const Color(0xff74788d),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
@@ -4470,7 +4594,7 @@ class _StartSeiteState extends State<StartSeite> {
           icon: Icons.mail_outline,
           onTap: () => _infoDialog(
             "Kontakt",
-            "Hier kommen später Support-E-Mail, Telefonnummer oder Kontaktformular von Handelswelt hinein.",
+            "Du erreichst uns per E-Mail unter support@handelswelt-deals.at.",
           ),
         ),
         _footerLink(
@@ -4486,17 +4610,13 @@ class _StartSeiteState extends State<StartSeite> {
 
     final branding = Row(
       children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: const Icon(
-            Icons.language,
-            color: Colors.white,
-            size: 23,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.asset(
+            'assets/logo/image_neu2.png',
+            width: 48,
+            height: 48,
+            fit: BoxFit.contain,
           ),
         ),
         const SizedBox(width: 12),
@@ -4541,7 +4661,10 @@ class _StartSeiteState extends State<StartSeite> {
           colors: [
             Color(0xff050b2c),
             Color(0xff11184f),
+            Color(0xff5b2cff),
           ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
       ),

@@ -1,5 +1,24 @@
 {
   "functions": {
     "source": "functions"
+  },
+  "hosting": {
+    "public": "marketing-site/public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "cleanUrls": true,
+    "rewrites": [
+      {
+        "source": "/datenschutz",
+        "destination": "/datenschutz.html"
+      },
+      {
+        "source": "/impressum",
+        "destination": "/impressum.html"
+      }
+    ]
   }
 }

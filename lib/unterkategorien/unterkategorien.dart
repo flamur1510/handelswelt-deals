@@ -52,9 +52,9 @@ const List<String> jobsUnterkategorien = [
   "Vollzeit",
   "Teilzeit",
   "Geringfügig",
-  "Lehrstelle",
+  "Lehre / Ausbildung",
   "Praktikum",
-  "Freelancer",
+  "Freelancer / Werkvertrag",
   "Saisonarbeit",
 ];
 

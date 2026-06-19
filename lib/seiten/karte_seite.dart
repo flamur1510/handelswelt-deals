@@ -259,52 +259,29 @@ class _KarteSeiteState extends State<KarteSeite> {
       ),
       child: Row(
         children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(17),
-            onTap: _zurStartseite,
-            child: Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xff5b2cff), Color(0xff7a5cff)],
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xff5b2cff), Color(0xff7a5cff)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                borderRadius: BorderRadius.circular(17),
+                child: const Icon(Icons.map, color: Colors.white, size: 22),
               ),
-              child: const Icon(Icons.language, color: Colors.white, size: 27),
-            ),
-          ),
-          const SizedBox(width: 10),
-          InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: _zurStartseite,
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    "HANDELSWELT",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      height: 1,
-                    ),
-                  ),
-                  Text(
-                    "DEALS",
-                    style: TextStyle(
-                      color: Color(0xffb9a8ff),
-                      fontSize: 13,
-                      fontStyle: FontStyle.italic,
-                      fontWeight: FontWeight.w900,
-                      height: 1,
-                    ),
-                  ),
-                ],
+              const SizedBox(width: 10),
+              const Text(
+                "Karte",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-            ),
+            ],
           ),
           const Spacer(),
           if (breit) ...[

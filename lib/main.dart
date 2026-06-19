@@ -18,6 +18,7 @@ import 'seiten/favoriten_seite.dart';
 import 'screens/news_seite.dart';
 import 'seiten/profil_seite.dart';
 import 'seiten/login_seite.dart';
+import 'seiten/splash_seite.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -49,7 +50,7 @@ class HandelsweltApp extends StatelessWidget {
         primarySwatch: Colors.deepPurple,
         scaffoldBackgroundColor: const Color(0xfff6f3ff),
       ),
-      home: const AuthPruefungSeite(),
+      home: const SplashSeite(naechsteSeite: AuthPruefungSeite()),
     );
   }
 }
@@ -364,6 +365,7 @@ class _HandelsweltHomeState extends State<HandelsweltHome>
   StreamSubscription<RemoteMessage>? _pushForegroundSubscription;
   StreamSubscription<RemoteMessage>? _pushOpenedSubscription;
   StreamSubscription<String>? _pushTokenSubscription;
+  StreamSubscription<QuerySnapshot>? _inserateSubscription;
 
   List<Produkt> produkte = [
     Produkt(
@@ -412,7 +414,7 @@ class _HandelsweltHomeState extends State<HandelsweltHome>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    produkteLaden();
+    _inserateEchtzeitLaden();
     _onlineStatusSetzen(true);
     _pushBenachrichtigungenVorbereiten();
   }
@@ -424,6 +426,7 @@ class _HandelsweltHomeState extends State<HandelsweltHome>
     _pushForegroundSubscription?.cancel();
     _pushOpenedSubscription?.cancel();
     _pushTokenSubscription?.cancel();
+    _inserateSubscription?.cancel();
     super.dispose();
   }
 
@@ -597,52 +600,44 @@ class _HandelsweltHomeState extends State<HandelsweltHome>
     });
   }
 
-  Future<void> produkteLaden() async {
+  void _inserateEchtzeitLaden() {
     final user = FirebaseAuth.instance.currentUser;
 
-    final snapshot = await FirebaseFirestore.instance.collection("inserate").get();
+    _inserateSubscription?.cancel();
+    _inserateSubscription = FirebaseFirestore.instance
+        .collection("inserate")
+        .snapshots()
+        .listen((snapshot) async {
+      final geladeneProdukte = snapshot.docs.map((doc) {
+        return Produkt.fromFirestore(doc);
+      }).toList();
 
-    final geladeneProdukte = snapshot.docs.map((doc) {
-      return Produkt.fromFirestore(doc);
-    }).toList();
+      final Set<String> favoritIds = {};
 
-    final Set<String> favoritIds = {};
+      if (user != null) {
+        try {
+          final favoritSnapshot = await FirebaseFirestore.instance
+              .collection("favoriten")
+              .where("userId", isEqualTo: user.uid)
+              .get();
 
-    if (user != null) {
-      try {
-        final favoritSnapshot = await FirebaseFirestore.instance
-            .collection("favoriten")
-            .where("userId", isEqualTo: user.uid)
-            .get();
-
-        for (final doc in favoritSnapshot.docs) {
-          final daten = doc.data();
-          final produktId = (daten["produktId"] ?? "").toString().trim();
-
-          if (produktId.isNotEmpty) {
-            favoritIds.add(produktId);
+          for (final doc in favoritSnapshot.docs) {
+            final daten = doc.data();
+            final produktId = (daten["produktId"] ?? "").toString().trim();
+            if (produktId.isNotEmpty) favoritIds.add(produktId);
           }
-        }
-      } catch (_) {
-        // Favoriten sollen das Laden der Startseite nicht blockieren.
+        } catch (_) {}
       }
-    }
 
-    for (final produkt in geladeneProdukte) {
-      produkt.favorit = favoritIds.contains(_favoritProduktId(produkt));
-    }
+      for (final produkt in geladeneProdukte) {
+        produkt.favorit = favoritIds.contains(_favoritProduktId(produkt));
+      }
 
-    for (final produkt in produkte) {
-      produkt.favorit = favoritIds.contains(_favoritProduktId(produkt));
-    }
+      if (!mounted) return;
 
-    if (!mounted) return;
-
-    setState(() {
-      produkte = [
-        ...geladeneProdukte,
-        ...produkte,
-      ];
+      setState(() {
+        produkte = geladeneProdukte;
+      });
     });
   }
 
@@ -854,22 +849,27 @@ class _HandelsweltHomeState extends State<HandelsweltHome>
           setState(() {
             aktuelleSeite = index;
           });
+          if (index == 0) _inserateEchtzeitLaden();
         },
         items: [
           const BottomNavigationBarItem(
-            icon: Icon(Icons.home),
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
             label: "Start",
           ),
           const BottomNavigationBarItem(
-            icon: Icon(Icons.category),
+            icon: Icon(Icons.grid_view_outlined),
+            activeIcon: Icon(Icons.grid_view),
             label: "Kategorien",
           ),
           const BottomNavigationBarItem(
-            icon: Icon(Icons.map),
+            icon: Icon(Icons.map_outlined),
+            activeIcon: Icon(Icons.map),
             label: "Karte",
           ),
           const BottomNavigationBarItem(
-            icon: Icon(Icons.add_box),
+            icon: Icon(Icons.add_box_outlined),
+            activeIcon: Icon(Icons.add_box),
             label: "Inserat",
           ),
           BottomNavigationBarItem(
@@ -878,10 +878,12 @@ class _HandelsweltHomeState extends State<HandelsweltHome>
           ),
           BottomNavigationBarItem(
             icon: _benachrichtigungsIcon(),
+            activeIcon: const Icon(Icons.newspaper),
             label: "News",
           ),
           const BottomNavigationBarItem(
-            icon: Icon(Icons.person),
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
             label: "Profil",
           ),
         ],
@@ -932,7 +934,7 @@ class _HandelsweltHomeState extends State<HandelsweltHome>
     final userId = FirebaseAuth.instance.currentUser?.uid ?? "";
 
     if (userId.isEmpty) {
-      return const Icon(Icons.notifications);
+      return const Icon(Icons.newspaper_outlined);
     }
 
     return StreamBuilder<QuerySnapshot>(
@@ -959,7 +961,7 @@ class _HandelsweltHomeState extends State<HandelsweltHome>
             return Stack(
               clipBehavior: Clip.none,
               children: [
-                const Icon(Icons.notifications),
+                const Icon(Icons.newspaper_outlined),
                 if (anzahl > 0)
                   Positioned(
                     right: -6,

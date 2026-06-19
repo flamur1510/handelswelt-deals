@@ -87,6 +87,7 @@ class _InseratSeiteState extends State<InseratSeite> {
   final baumarktMaterialController = TextEditingController();
   final baumarktMengeController = TextEditingController();
 
+  final jobBerufsbezeichnungController = TextEditingController();
   final jobGehaltController = TextEditingController();
   final jobArbeitsortController = TextEditingController();
   final jobErfahrungController = TextEditingController();
@@ -128,9 +129,10 @@ class _InseratSeiteState extends State<InseratSeite> {
   String immobilienKeller = "Nein";
   String immobilienMoebliert = "Nein";
 
-  String jobBeschaeftigungsart = "Vollzeit";
-  String jobHomeoffice = "Nein";
-  String jobFuehrerschein = "Nein";
+  String jobHomeoffice = "Kein Homeoffice";
+  String jobFuehrerschein = "Nicht erforderlich";
+  String jobSchichtarbeit = "Tagschicht";
+  String jobReisebereitschaft = "Keine";
 
   String dienstleistungAnfahrt = "Ja";
   String dienstleistungNotdienst = "Nein";
@@ -431,11 +433,11 @@ class _InseratSeiteState extends State<InseratSeite> {
     }
 
     if (kategorie == "Jobs" &&
-        (jobGehaltController.text.trim().isEmpty ||
+        (jobBerufsbezeichnungController.text.trim().isEmpty ||
             jobArbeitsortController.text.trim().isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Bitte Gehalt und Arbeitsort eingeben."),
+          content: Text("Bitte Berufsbezeichnung und Arbeitsort eingeben."),
         ),
       );
       return false;
@@ -719,12 +721,15 @@ class _InseratSeiteState extends State<InseratSeite> {
 
       if (kategorie == "Jobs") {
         produktMap.addAll({
+          "jobBerufsbezeichnung": jobBerufsbezeichnungController.text.trim(),
           "jobGehalt": jobGehaltController.text.trim(),
           "jobArbeitsort": jobArbeitsortController.text.trim(),
           "jobErfahrung": jobErfahrungController.text.trim(),
-          "jobBeschaeftigungsart": jobBeschaeftigungsart,
+          "jobBeschaeftigungsart": unterkategorie,
           "jobHomeoffice": jobHomeoffice,
           "jobFuehrerschein": jobFuehrerschein,
+          "jobSchichtarbeit": jobSchichtarbeit,
+          "jobReisebereitschaft": jobReisebereitschaft,
         });
       }
 
@@ -846,6 +851,7 @@ class _InseratSeiteState extends State<InseratSeite> {
     baumarktMaterialController.clear();
     baumarktMengeController.clear();
 
+    jobBerufsbezeichnungController.clear();
     jobGehaltController.clear();
     jobArbeitsortController.clear();
     jobErfahrungController.clear();
@@ -884,9 +890,10 @@ class _InseratSeiteState extends State<InseratSeite> {
       immobilienLift = "Nein";
       immobilienKeller = "Nein";
       immobilienMoebliert = "Nein";
-      jobBeschaeftigungsart = "Vollzeit";
-      jobHomeoffice = "Nein";
-      jobFuehrerschein = "Nein";
+      jobHomeoffice = "Kein Homeoffice";
+      jobFuehrerschein = "Nicht erforderlich";
+      jobSchichtarbeit = "Tagschicht";
+      jobReisebereitschaft = "Keine";
       dienstleistungAnfahrt = "Ja";
       dienstleistungNotdienst = "Nein";
       vermietungLieferungMoeglich = "Nein";
@@ -959,6 +966,7 @@ class _InseratSeiteState extends State<InseratSeite> {
     baumarktMaterialController.dispose();
     baumarktMengeController.dispose();
 
+    jobBerufsbezeichnungController.dispose();
     jobGehaltController.dispose();
     jobArbeitsortController.dispose();
     jobErfahrungController.dispose();
@@ -986,6 +994,13 @@ class _InseratSeiteState extends State<InseratSeite> {
 
     final aktuellerWert =
         unterkategorien.contains(unterkategorie) ? unterkategorie : unterkategorien.first;
+
+    // Startwert sofort setzen damit Jobdetails korrekt angezeigt werden
+    if (unterkategorie.isEmpty || !unterkategorien.contains(unterkategorie)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => unterkategorie = unterkategorien.first);
+      });
+    }
 
     return InseratDropdown(
       label: "Unterkategorie",
@@ -1108,8 +1123,10 @@ class _InseratSeiteState extends State<InseratSeite> {
               child: Column(
                 children: [
                   InseratFeld(controller: titelController, label: "Titel"),
-                  InseratFeld(controller: preisController, label: "Preis"),
-                  InseratFeld(controller: ortController, label: "Ort"),
+                  InseratZeile(
+                    links: InseratFeld(controller: preisController, label: "Preis"),
+                    rechts: InseratFeld(controller: ortController, label: "Ort"),
+                  ),
                   InseratFeld(controller: adresseController, label: "Adresse"),
                   InseratDropdown(
                     label: "Kategorie",
@@ -1245,118 +1262,105 @@ class _InseratSeiteState extends State<InseratSeite> {
 
   Widget _autoFelder() {
     return InseratKarte(
-      titel: "Auto verkaufen Details",
+      titel: "Auto Details",
       child: Column(
         children: [
-          InseratFeld(controller: autoMarkeController, label: "Marke"),
-          InseratFeld(controller: autoModellController, label: "Modell"),
-          InseratFeld(controller: autoBaujahrController, label: "Baujahr"),
-          InseratFeld(
-            controller: autoErstzulassungController,
-            label: "Erstzulassung",
+          InseratZeile(
+            links: InseratFeld(controller: autoMarkeController, label: "Marke"),
+            rechts: InseratFeld(controller: autoModellController, label: "Modell"),
           ),
-          InseratFeld(controller: autoKilometerController, label: "Kilometerstand"),
-          InseratFeld(controller: autoLeistungController, label: "Leistung PS"),
-          InseratFeld(controller: autoFarbeController, label: "Farbe"),
-          InseratFeld(controller: autoTuerenController, label: "Türen"),
-          InseratFeld(controller: autoSitzeController, label: "Sitze"),
-          InseratFeld(controller: autoPickerlController, label: "Pickerl gültig bis"),
-          InseratFeld(controller: autoVorbesitzerController, label: "Vorbesitzer"),
-          InseratFeld(controller: autoKarosserieController, label: "Karosserie"),
-          InseratFeld(controller: autoAntriebController, label: "Antrieb"),
-          InseratFeld(controller: autoHubraumController, label: "Hubraum ccm"),
-          InseratFeld(controller: autoVerbrauchController, label: "Verbrauch l/100 km"),
-          InseratFeld(controller: autoCo2Controller, label: "CO₂ g/km"),
-          InseratFeld(controller: autoSchluesselController, label: "Schlüsselanzahl"),
-          InseratDropdown(
-            label: "Kraftstoff",
-            value: autoKraftstoff,
-            items: kraftstoffe,
-            onChanged: (value) {
-              setState(() {
-                autoKraftstoff = value!;
-              });
-            },
+          InseratZeile(
+            links: InseratFeld(controller: autoBaujahrController, label: "Baujahr"),
+            rechts: InseratFeld(controller: autoErstzulassungController, label: "Erstzulassung"),
           ),
-          InseratDropdown(
-            label: "Getriebe",
-            value: autoGetriebe,
-            items: getriebeArten,
-            onChanged: (value) {
-              setState(() {
-                autoGetriebe = value!;
-              });
-            },
+          InseratZeile(
+            links: InseratFeld(controller: autoKilometerController, label: "Kilometerstand"),
+            rechts: InseratFeld(controller: autoLeistungController, label: "Leistung PS"),
           ),
-          InseratDropdown(
-            label: "Unfallfrei",
-            value: autoUnfallfrei,
-            items: const ["Ja", "Nein"],
-            onChanged: (value) {
-              setState(() {
-                autoUnfallfrei = value!;
-              });
-            },
+          InseratZeile(
+            links: InseratFeld(controller: autoFarbeController, label: "Farbe"),
+            rechts: InseratFeld(controller: autoTuerenController, label: "Türen"),
           ),
-          InseratDropdown(
-            label: "Servicegepflegt",
-            value: autoServicegepflegt,
-            items: const ["Ja", "Nein"],
-            onChanged: (value) {
-              setState(() {
-                autoServicegepflegt = value!;
-              });
-            },
+          InseratZeile(
+            links: InseratFeld(controller: autoSitzeController, label: "Sitze"),
+            rechts: InseratFeld(controller: autoPickerlController, label: "Pickerl bis"),
           ),
-          InseratDropdown(
-            label: "Inzahlungnahme möglich",
-            value: autoInzahlungnahme,
-            items: const ["Ja", "Nein"],
-            onChanged: (value) {
-              setState(() {
-                autoInzahlungnahme = value!;
-              });
-            },
+          InseratZeile(
+            links: InseratFeld(controller: autoVorbesitzerController, label: "Vorbesitzer"),
+            rechts: InseratFeld(controller: autoKarosserieController, label: "Karosserie"),
           ),
-          InseratDropdown(
-            label: "Leasing möglich",
-            value: autoLeasingMoeglich,
-            items: const ["Ja", "Nein"],
-            onChanged: (value) {
-              setState(() {
-                autoLeasingMoeglich = value!;
-              });
-            },
+          InseratZeile(
+            links: InseratFeld(controller: autoAntriebController, label: "Antrieb"),
+            rechts: InseratFeld(controller: autoHubraumController, label: "Hubraum ccm"),
           ),
-          InseratDropdown(
-            label: "Finanzierung möglich",
-            value: autoFinanzierungMoeglich,
-            items: const ["Ja", "Nein"],
-            onChanged: (value) {
-              setState(() {
-                autoFinanzierungMoeglich = value!;
-              });
-            },
+          InseratZeile(
+            links: InseratFeld(controller: autoVerbrauchController, label: "Verbrauch l/100km"),
+            rechts: InseratFeld(controller: autoCo2Controller, label: "CO₂ g/km"),
           ),
-          InseratDropdown(
-            label: "Nichtraucherfahrzeug",
-            value: autoNichtraucher,
-            items: const ["Ja", "Nein"],
-            onChanged: (value) {
-              setState(() {
-                autoNichtraucher = value!;
-              });
-            },
+          InseratZeile(
+            links: InseratFeld(controller: autoSchluesselController, label: "Schlüsselanzahl"),
+            rechts: InseratDropdown(
+              label: "Kraftstoff",
+              value: autoKraftstoff,
+              items: kraftstoffe,
+              onChanged: (value) => setState(() => autoKraftstoff = value!),
+            ),
           ),
-          InseratDropdown(
-            label: "MwSt. ausweisbar",
-            value: autoMwstAusweisbar,
-            items: const ["Ja", "Nein"],
-            onChanged: (value) {
-              setState(() {
-                autoMwstAusweisbar = value!;
-              });
-            },
+          InseratZeile(
+            links: InseratDropdown(
+              label: "Getriebe",
+              value: autoGetriebe,
+              items: getriebeArten,
+              onChanged: (value) => setState(() => autoGetriebe = value!),
+            ),
+            rechts: InseratDropdown(
+              label: "Unfallfrei",
+              value: autoUnfallfrei,
+              items: const ["Ja", "Nein"],
+              onChanged: (value) => setState(() => autoUnfallfrei = value!),
+            ),
+          ),
+          InseratZeile(
+            links: InseratDropdown(
+              label: "Servicegepflegt",
+              value: autoServicegepflegt,
+              items: const ["Ja", "Nein"],
+              onChanged: (value) => setState(() => autoServicegepflegt = value!),
+            ),
+            rechts: InseratDropdown(
+              label: "Inzahlungnahme",
+              value: autoInzahlungnahme,
+              items: const ["Ja", "Nein"],
+              onChanged: (value) => setState(() => autoInzahlungnahme = value!),
+            ),
+          ),
+          InseratZeile(
+            links: InseratDropdown(
+              label: "Leasing möglich",
+              value: autoLeasingMoeglich,
+              items: const ["Ja", "Nein"],
+              onChanged: (value) => setState(() => autoLeasingMoeglich = value!),
+            ),
+            rechts: InseratDropdown(
+              label: "Finanzierung",
+              value: autoFinanzierungMoeglich,
+              items: const ["Ja", "Nein"],
+              onChanged: (value) => setState(() => autoFinanzierungMoeglich = value!),
+            ),
+          ),
+          InseratZeile(
+            links: InseratDropdown(
+              label: "Nichtraucher",
+              value: autoNichtraucher,
+              items: const ["Ja", "Nein"],
+              onChanged: (value) => setState(() => autoNichtraucher = value!),
+            ),
+            rechts: InseratDropdown(
+              label: "MwSt. ausweisbar",
+              value: autoMwstAusweisbar,
+              items: const ["Ja", "Nein"],
+              onChanged: (value) => setState(() => autoMwstAusweisbar = value!),
+            ),
           ),
         ],
       ),
@@ -1372,118 +1376,82 @@ class _InseratSeiteState extends State<InseratSeite> {
             label: "Immobilienart",
             value: immobilienArt,
             items: immobilienArten,
-            onChanged: (value) {
-              setState(() {
-                immobilienArt = value!;
-              });
-            },
+            onChanged: (value) => setState(() => immobilienArt = value!),
           ),
-          InseratFeld(
-            controller: immobilienWohnflaecheController,
-            label: "Wohnfläche m²",
+          InseratZeile(
+            links: InseratFeld(controller: immobilienWohnflaecheController, label: "Wohnfläche m²"),
+            rechts: InseratFeld(controller: immobilienNutzflaecheController, label: "Nutzfläche m²"),
           ),
-          InseratFeld(
-            controller: immobilienNutzflaecheController,
-            label: "Nutzfläche m²",
+          InseratZeile(
+            links: InseratFeld(controller: immobilienGrundstueckController, label: "Grundstück m²"),
+            rechts: InseratFeld(controller: immobilienZimmerController, label: "Zimmer"),
           ),
-          InseratFeld(
-            controller: immobilienGrundstueckController,
-            label: "Grundstücksfläche m²",
+          InseratZeile(
+            links: InseratFeld(controller: immobilienEtageController, label: "Etage"),
+            rechts: InseratFeld(controller: immobilienKautionController, label: "Kaution"),
           ),
-          InseratFeld(controller: immobilienZimmerController, label: "Zimmer"),
-          InseratFeld(controller: immobilienEtageController, label: "Etage"),
-          InseratFeld(controller: immobilienKautionController, label: "Kaution"),
-          InseratFeld(
-            controller: immobilienBetriebskostenController,
-            label: "Betriebskosten",
+          InseratZeile(
+            links: InseratFeld(controller: immobilienBetriebskostenController, label: "Betriebskosten"),
+            rechts: InseratFeld(controller: immobilienHeizungController, label: "Heizung"),
           ),
-          InseratFeld(controller: immobilienHeizungController, label: "Heizung"),
-          InseratFeld(
-            controller: immobilienEnergieausweisController,
-            label: "Energieausweis",
+          InseratZeile(
+            links: InseratFeld(controller: immobilienEnergieausweisController, label: "Energieausweis"),
+            rechts: InseratFeld(controller: immobilienProvisionController, label: "Provision"),
           ),
-          InseratFeld(controller: immobilienProvisionController, label: "Provision"),
-          InseratFeld(
-            controller: immobilienVerfuegbarAbController,
-            label: "Verfügbar ab",
+          InseratZeile(
+            links: InseratFeld(controller: immobilienVerfuegbarAbController, label: "Verfügbar ab"),
+            rechts: InseratFeld(controller: immobilienBaujahrController, label: "Baujahr"),
           ),
-          InseratFeld(
-            controller: immobilienBaujahrController,
-            label: "Baujahr Immobilie",
+          InseratZeile(
+            links: InseratFeld(controller: immobilienEnergieklasseController, label: "Energieklasse"),
+            rechts: InseratDropdown(
+              label: "Balkon",
+              value: immobilienBalkon,
+              items: const ["Ja", "Nein"],
+              onChanged: (value) => setState(() => immobilienBalkon = value!),
+            ),
           ),
-          InseratFeld(
-            controller: immobilienEnergieklasseController,
-            label: "Energieklasse",
+          InseratZeile(
+            links: InseratDropdown(
+              label: "Terrasse",
+              value: immobilienTerrasse,
+              items: const ["Ja", "Nein"],
+              onChanged: (value) => setState(() => immobilienTerrasse = value!),
+            ),
+            rechts: InseratDropdown(
+              label: "Garten",
+              value: immobilienGarten,
+              items: const ["Ja", "Nein"],
+              onChanged: (value) => setState(() => immobilienGarten = value!),
+            ),
           ),
-          InseratDropdown(
-            label: "Balkon",
-            value: immobilienBalkon,
-            items: const ["Ja", "Nein"],
-            onChanged: (value) {
-              setState(() {
-                immobilienBalkon = value!;
-              });
-            },
+          InseratZeile(
+            links: InseratDropdown(
+              label: "Garage/Parkplatz",
+              value: immobilienGarage,
+              items: const ["Ja", "Nein"],
+              onChanged: (value) => setState(() => immobilienGarage = value!),
+            ),
+            rechts: InseratDropdown(
+              label: "Lift",
+              value: immobilienLift,
+              items: const ["Ja", "Nein"],
+              onChanged: (value) => setState(() => immobilienLift = value!),
+            ),
           ),
-          InseratDropdown(
-            label: "Terrasse",
-            value: immobilienTerrasse,
-            items: const ["Ja", "Nein"],
-            onChanged: (value) {
-              setState(() {
-                immobilienTerrasse = value!;
-              });
-            },
-          ),
-          InseratDropdown(
-            label: "Garten",
-            value: immobilienGarten,
-            items: const ["Ja", "Nein"],
-            onChanged: (value) {
-              setState(() {
-                immobilienGarten = value!;
-              });
-            },
-          ),
-          InseratDropdown(
-            label: "Garage/Parkplatz",
-            value: immobilienGarage,
-            items: const ["Ja", "Nein"],
-            onChanged: (value) {
-              setState(() {
-                immobilienGarage = value!;
-              });
-            },
-          ),
-          InseratDropdown(
-            label: "Lift",
-            value: immobilienLift,
-            items: const ["Ja", "Nein"],
-            onChanged: (value) {
-              setState(() {
-                immobilienLift = value!;
-              });
-            },
-          ),
-          InseratDropdown(
-            label: "Keller",
-            value: immobilienKeller,
-            items: const ["Ja", "Nein"],
-            onChanged: (value) {
-              setState(() {
-                immobilienKeller = value!;
-              });
-            },
-          ),
-          InseratDropdown(
-            label: "Möbliert",
-            value: immobilienMoebliert,
-            items: const ["Ja", "Nein"],
-            onChanged: (value) {
-              setState(() {
-                immobilienMoebliert = value!;
-              });
-            },
+          InseratZeile(
+            links: InseratDropdown(
+              label: "Keller",
+              value: immobilienKeller,
+              items: const ["Ja", "Nein"],
+              onChanged: (value) => setState(() => immobilienKeller = value!),
+            ),
+            rechts: InseratDropdown(
+              label: "Möbliert",
+              value: immobilienMoebliert,
+              items: const ["Ja", "Nein"],
+              onChanged: (value) => setState(() => immobilienMoebliert = value!),
+            ),
           ),
         ],
       ),
@@ -1499,16 +1467,16 @@ class _InseratSeiteState extends State<InseratSeite> {
             label: "Bootstyp",
             value: bootstyp,
             items: bootstypen,
-            onChanged: (value) {
-              setState(() {
-                bootstyp = value!;
-              });
-            },
+            onChanged: (value) => setState(() => bootstyp = value!),
           ),
-          InseratFeld(controller: bootMarkeController, label: "Marke"),
-          InseratFeld(controller: bootModellController, label: "Modell"),
-          InseratFeld(controller: bootBaujahrController, label: "Baujahr"),
-          InseratFeld(controller: bootLaengeController, label: "Länge"),
+          InseratZeile(
+            links: InseratFeld(controller: bootMarkeController, label: "Marke"),
+            rechts: InseratFeld(controller: bootModellController, label: "Modell"),
+          ),
+          InseratZeile(
+            links: InseratFeld(controller: bootBaujahrController, label: "Baujahr"),
+            rechts: InseratFeld(controller: bootLaengeController, label: "Länge"),
+          ),
           InseratFeld(controller: bootLeistungController, label: "Leistung PS"),
         ],
       ),
@@ -1520,21 +1488,13 @@ class _InseratSeiteState extends State<InseratSeite> {
       titel: "Baumaschinen Details",
       child: Column(
         children: [
-          InseratFeld(
-            controller: baumaschinenZustandController,
-            label: "Zustand",
+          InseratZeile(
+            links: InseratFeld(controller: baumaschinenZustandController, label: "Zustand"),
+            rechts: InseratFeld(controller: baumaschinenBaujahrController, label: "Baujahr"),
           ),
-          InseratFeld(
-            controller: baumaschinenBaujahrController,
-            label: "Baujahr",
-          ),
-          InseratFeld(
-            controller: baumaschinenBetriebsstundenController,
-            label: "Betriebsstunden",
-          ),
-          InseratFeld(
-            controller: baumaschinenGewichtController,
-            label: "Gewicht",
+          InseratZeile(
+            links: InseratFeld(controller: baumaschinenBetriebsstundenController, label: "Betriebsstunden"),
+            rechts: InseratFeld(controller: baumaschinenGewichtController, label: "Gewicht"),
           ),
         ],
       ),
@@ -1546,11 +1506,10 @@ class _InseratSeiteState extends State<InseratSeite> {
       titel: "Baumarkt Details",
       child: Column(
         children: [
-          InseratFeld(
-            controller: baumarktHerstellerController,
-            label: "Hersteller",
+          InseratZeile(
+            links: InseratFeld(controller: baumarktHerstellerController, label: "Hersteller"),
+            rechts: InseratFeld(controller: baumarktMaterialController, label: "Material"),
           ),
-          InseratFeld(controller: baumarktMaterialController, label: "Material"),
           InseratFeld(controller: baumarktMengeController, label: "Menge"),
         ],
       ),
@@ -1559,17 +1518,14 @@ class _InseratSeiteState extends State<InseratSeite> {
 
   Widget _jobsFelder() {
     return JobsFelder(
+      berufsbezeichnungController: jobBerufsbezeichnungController,
       gehaltController: jobGehaltController,
       arbeitsortController: jobArbeitsortController,
       erfahrungController: jobErfahrungController,
-      beschaeftigungsart: jobBeschaeftigungsart,
       homeoffice: jobHomeoffice,
       fuehrerschein: jobFuehrerschein,
-      onBeschaeftigungsart: (value) {
-        setState(() {
-          jobBeschaeftigungsart = value!;
-        });
-      },
+      schichtarbeit: jobSchichtarbeit,
+      reisebereitschaft: jobReisebereitschaft,
       onHomeoffice: (value) {
         setState(() {
           jobHomeoffice = value!;
@@ -1578,6 +1534,16 @@ class _InseratSeiteState extends State<InseratSeite> {
       onFuehrerschein: (value) {
         setState(() {
           jobFuehrerschein = value!;
+        });
+      },
+      onSchichtarbeit: (value) {
+        setState(() {
+          jobSchichtarbeit = value!;
+        });
+      },
+      onReisebereitschaft: (value) {
+        setState(() {
+          jobReisebereitschaft = value!;
         });
       },
     );
@@ -1608,49 +1574,31 @@ class _InseratSeiteState extends State<InseratSeite> {
       titel: "Vermietung Details",
       child: Column(
         children: [
-          InseratFeld(
-            controller: vermietungTagespreisController,
-            label: "Tagespreis",
+          InseratZeile(
+            links: InseratFeld(controller: vermietungTagespreisController, label: "Tagespreis"),
+            rechts: InseratFeld(controller: vermietungWochenpreisController, label: "Wochenpreis"),
           ),
-          InseratFeld(
-            controller: vermietungWochenpreisController,
-            label: "Wochenpreis",
+          InseratZeile(
+            links: InseratFeld(controller: vermietungKautionController, label: "Kaution"),
+            rechts: InseratFeld(controller: vermietungMindestmietdauerController, label: "Mindestmietdauer"),
           ),
-          InseratFeld(
-            controller: vermietungKautionController,
-            label: "Kaution",
+          InseratZeile(
+            links: InseratFeld(controller: vermietungUebergabeortController, label: "Übergabeort"),
+            rechts: InseratFeld(controller: vermietungVerfuegbarkeitController, label: "Verfügbarkeit"),
           ),
-          InseratFeld(
-            controller: vermietungMindestmietdauerController,
-            label: "Mindestmietdauer",
-          ),
-          InseratFeld(
-            controller: vermietungUebergabeortController,
-            label: "Übergabeort",
-          ),
-          InseratFeld(
-            controller: vermietungVerfuegbarkeitController,
-            label: "Verfügbarkeit",
-          ),
-          InseratDropdown(
-            label: "Lieferung möglich",
-            value: vermietungLieferungMoeglich,
-            items: const ["Ja", "Nein"],
-            onChanged: (value) {
-              setState(() {
-                vermietungLieferungMoeglich = value!;
-              });
-            },
-          ),
-          InseratDropdown(
-            label: "Versicherung inklusive",
-            value: vermietungVersicherungInklusive,
-            items: const ["Ja", "Nein"],
-            onChanged: (value) {
-              setState(() {
-                vermietungVersicherungInklusive = value!;
-              });
-            },
+          InseratZeile(
+            links: InseratDropdown(
+              label: "Lieferung möglich",
+              value: vermietungLieferungMoeglich,
+              items: const ["Ja", "Nein"],
+              onChanged: (value) => setState(() => vermietungLieferungMoeglich = value!),
+            ),
+            rechts: InseratDropdown(
+              label: "Versicherung inkl.",
+              value: vermietungVersicherungInklusive,
+              items: const ["Ja", "Nein"],
+              onChanged: (value) => setState(() => vermietungVersicherungInklusive = value!),
+            ),
           ),
         ],
       ),
@@ -1666,14 +1614,12 @@ class _InseratSeiteState extends State<InseratSeite> {
             label: "Zustand",
             value: zustand,
             items: zustaende,
-            onChanged: (value) {
-              setState(() {
-                zustand = value!;
-              });
-            },
+            onChanged: (value) => setState(() => zustand = value!),
           ),
-          InseratFeld(controller: herstellerController, label: "Hersteller"),
-          InseratFeld(controller: garantieController, label: "Garantie"),
+          InseratZeile(
+            links: InseratFeld(controller: herstellerController, label: "Hersteller"),
+            rechts: InseratFeld(controller: garantieController, label: "Garantie"),
+          ),
         ],
       ),
     );

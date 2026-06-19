@@ -28,5 +28,15 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Diese App benötigt Mikrofonzugriff zum Aufnehmen von Sprachnachrichten.</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Diese App benötigt Standortzugriff zum Teilen deines Standorts im Chat.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Diese App benötigt Standortzugriff zum Teilen deines Standorts im Chat.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Diese App benötigt Standortzugriff zum Teilen deines Standorts im Chat.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Diese App benötigt Standortzugriff zum Teilen deines Standorts im Chat.</string>
 </dict>
 </plist>

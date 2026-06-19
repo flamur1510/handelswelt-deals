@@ -7,12 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:273730391475:android:f156fa61b98d4d396d4fc6",
+        "mobilesdk_app_id": "1:273730391475:android:20dc2268499dd14d6d4fc6",
         "android_client_info": {
-          "package_name": "com.example.handelswelt"
+          "package_name": "com.handelswelt.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "273730391475-0ndthpk33nv7rb0jn4l81j5jcpvtn4ko.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBO0mVFqx4XJ6e7WXhVdNi1DSfDW6tcIg0"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "273730391475-0ndthpk33nv7rb0jn4l81j5jcpvtn4ko.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "273730391475-l2uof7l1mp88mst65am9bub2hu36kg7h.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.flamur.deals"
+              }
+            }
+          ]
         }
       }
     }

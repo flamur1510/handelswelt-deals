@@ -1,7 +1,40 @@
 const admin = require("firebase-admin");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 
 admin.initializeApp();
+
+const INSERAT_LAUFZEIT_TAGE = 30;
+
+// Markiert Inserate, deren 30-tägige Laufzeit abgelaufen ist, täglich als "abgelaufen".
+exports.inserateAblaufenLassen = onSchedule(
+  { schedule: "every day 03:00", timeZone: "Europe/Vienna", region: "europe-west1" },
+  async () => {
+    const grenze = admin.firestore.Timestamp.fromMillis(
+      Date.now() - INSERAT_LAUFZEIT_TAGE * 24 * 60 * 60 * 1000
+    );
+
+    const snapshot = await admin
+      .firestore()
+      .collection("inserate")
+      .where("status", "==", "aktiv")
+      .where("erstelltAm", "<=", grenze)
+      .get();
+
+    if (snapshot.empty) {
+      console.log("Keine abgelaufenen Inserate gefunden.");
+      return;
+    }
+
+    const batch = admin.firestore().batch();
+    snapshot.docs.forEach((doc) => {
+      batch.update(doc.ref, { status: "abgelaufen" });
+    });
+    await batch.commit();
+
+    console.log(`${snapshot.size} Inserat(e) als abgelaufen markiert.`);
+  }
+);
 
 exports.sendChatPushNotification = onDocumentCreated(
   "chats/{chatId}/nachrichten/{nachrichtId}",

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../model/produkt.dart';
+import '../services/inserate_service.dart';
 import 'detail_seite.dart';
 import 'inserat_bearbeiten_seite.dart';
 
@@ -529,8 +530,43 @@ class _MeineInserateSeiteState extends State<MeineInserateSeite> {
                     _chip(produkt.typ == "Firma"
                         ? "Verifizierte Firma"
                         : "Privat"),
+                    if (produkt.istAbgelaufen)
+                      _chip("Abgelaufen", warnung: true),
                   ],
                 ),
+                if (produkt.istAbgelaufen) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        await InserateService.erneutInserieren(produkt.id);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                "Inserat ist wieder 30 Tage aktiv.",
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff5b2cff),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text(
+                        "Erneut inserieren",
+                        style: TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -610,20 +646,20 @@ class _MeineInserateSeiteState extends State<MeineInserateSeite> {
     );
   }
 
-  Widget _chip(String text) {
+  Widget _chip(String text, {bool warnung = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: 10,
         vertical: 6,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xfff1edff),
+        color: warnung ? const Color(0xffffedf1) : const Color(0xfff1edff),
         borderRadius: BorderRadius.circular(30),
       ),
       child: Text(
         text,
-        style: const TextStyle(
-          color: Color(0xff5b2cff),
+        style: TextStyle(
+          color: warnung ? Colors.red : const Color(0xff5b2cff),
           fontSize: 11,
           fontWeight: FontWeight.w900,
         ),

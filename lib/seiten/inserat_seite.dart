@@ -718,6 +718,7 @@ class _InseratSeiteState extends State<InseratSeite> {
       }
 
       produktMap["erstelltAm"] = FieldValue.serverTimestamp();
+      produktMap["status"] = "aktiv";
 
       if (kategorie == "Jobs") {
         produktMap.addAll({

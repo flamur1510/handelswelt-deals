@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Produkt {
+  static const int laufzeitTage = 30;
+
   String id;
 
   String titel;
@@ -20,6 +22,9 @@ class Produkt {
   List<String> bilder;
 
   bool favorit;
+
+  DateTime? erstelltAm;
+  String status;
 
   String verkaeuferId;
   String verkaeuferEmail;
@@ -147,6 +152,8 @@ class Produkt {
     required this.bild,
     this.bilder = const [],
     this.favorit = false,
+    this.erstelltAm,
+    this.status = "aktiv",
     required this.verkaeuferId,
     required this.verkaeuferEmail,
     this.telefon = "",
@@ -243,9 +250,17 @@ class Produkt {
     this.baumarktMenge = "",
   });
 
+  /// True, wenn die Laufzeit von 30 Tagen seit Veröffentlichung abgelaufen ist.
+  bool get istAbgelaufen {
+    if (status == "abgelaufen") return true;
+    if (erstelltAm == null) return false;
+    return DateTime.now().difference(erstelltAm!).inDays >= laufzeitTage;
+  }
+
   Map<String, dynamic> toMap() {
     return {
       "titel": titel,
+      "status": status,
       "preis": preis,
       "ort": ort,
       "adresse": adresse,
@@ -381,6 +396,10 @@ class Produkt {
       bild: data["bild"] ?? "",
       bilder: List<String>.from(data["bilder"] ?? []),
       favorit: data["favorit"] ?? false,
+      erstelltAm: (data["erstelltAm"] is Timestamp)
+          ? (data["erstelltAm"] as Timestamp).toDate()
+          : null,
+      status: data["status"] ?? "aktiv",
       verkaeuferId: data["verkaeuferId"] ?? "",
       verkaeuferEmail: data["verkaeuferEmail"] ?? "",
       telefon: data["telefon"] ?? "",

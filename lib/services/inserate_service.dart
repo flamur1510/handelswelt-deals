@@ -22,6 +22,7 @@ class InserateService {
       ersteLaden() async {
     final snap = await _db
         .collection(FirestoreKollektionen.inserate)
+        .where('status', isEqualTo: 'aktiv')
         .orderBy('erstelltAm', descending: true)
         .limit(_seitengroesse)
         .get();
@@ -37,6 +38,7 @@ class InserateService {
       naechsteSeite(DocumentSnapshot cursor) async {
     final snap = await _db
         .collection(FirestoreKollektionen.inserate)
+        .where('status', isEqualTo: 'aktiv')
         .orderBy('erstelltAm', descending: true)
         .startAfterDocument(cursor)
         .limit(_seitengroesse)
@@ -52,11 +54,22 @@ class InserateService {
   static Future<List<Produkt>> alleLaden() async {
     final snap = await _db
         .collection(FirestoreKollektionen.inserate)
+        .where('status', isEqualTo: 'aktiv')
         .orderBy('erstelltAm', descending: true)
         .limit(20)
         .get();
 
     return snap.docs.map((doc) => Produkt.fromFirestore(doc)).toList();
+  }
+
+  /// Inserat erneut inserieren: setzt es wieder aktiv und die Laufzeit
+  /// (30 Tage) beginnt ab jetzt neu zu laufen.
+  static Future<void> erneutInserieren(String id) async {
+    if (id.trim().isEmpty) return;
+    await _db.collection(FirestoreKollektionen.inserate).doc(id).update({
+      'status': 'aktiv',
+      'erstelltAm': FieldValue.serverTimestamp(),
+    });
   }
 
   /// Anzahl der Aufrufe erhöhen

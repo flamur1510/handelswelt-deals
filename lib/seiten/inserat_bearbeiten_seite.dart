@@ -618,6 +618,12 @@ class _InseratBearbeitenSeiteState extends State<InseratBearbeitenSeite> {
             : "",
       };
 
+      final warAbgelaufen = widget.produkt.istAbgelaufen;
+      if (warAbgelaufen) {
+        daten["status"] = "aktiv";
+        daten["erstelltAm"] = FieldValue.serverTimestamp();
+      }
+
       await FirebaseFirestore.instance
           .collection("inserate")
           .doc(widget.produkt.id)
@@ -625,7 +631,13 @@ class _InseratBearbeitenSeiteState extends State<InseratBearbeitenSeite> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Inserat gespeichert.")),
+          SnackBar(
+            content: Text(
+              warAbgelaufen
+                  ? "Inserat gespeichert und erneut inseriert."
+                  : "Inserat gespeichert.",
+            ),
+          ),
         );
         Navigator.pop(context);
       }

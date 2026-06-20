@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "inserate",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "erstelltAm", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

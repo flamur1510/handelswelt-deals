@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "handelswelt-703b0"
-  }
+  },
+  "targets": {
+    "handelswelt-703b0": {
+      "hosting": {
+        "marketing": [
+          "handelswelt-deals"
+        ],
+        "app": [
+          "handelswelt-deals-app"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>273730391475-l2uof7l1mp88mst65am9bub2hu36kg7h.apps.googleusercontent.com</string>
+	<string>273730391475-qa6tr5ie73r462aqo1ftdedgac9s2pb5.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.273730391475-l2uof7l1mp88mst65am9bub2hu36kg7h</string>
+	<string>com.googleusercontent.apps.273730391475-qa6tr5ie73r462aqo1ftdedgac9s2pb5</string>
 	<key>API_KEY</key>
 	<string>AIzaSyBOaHxUSDclEAMWue_MSml5IvaJ4u_GEq8</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.flamur.deals</string>
+	<string>com.handelswelt.app</string>
 	<key>PROJECT_ID</key>
 	<string>handelswelt-703b0</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:273730391475:ios:d7cd72a5f13947256d4fc6</string>
+	<string>1:273730391475:ios:291945a45b937a416d4fc6</string>
 </dict>
 </plist>

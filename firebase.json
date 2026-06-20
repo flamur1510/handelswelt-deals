@@ -2,24 +2,42 @@
   "functions": {
     "source": "functions"
   },
-  "hosting": {
-    "site": "handelswelt-deals",
-    "public": "marketing-site/public",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "cleanUrls": true,
-    "rewrites": [
-      {
-        "source": "/datenschutz",
-        "destination": "/datenschutz.html"
-      },
-      {
-        "source": "/impressum",
-        "destination": "/impressum.html"
-      }
-    ]
-  }
+  "hosting": [
+    {
+      "target": "marketing",
+      "public": "marketing-site/public",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "cleanUrls": true,
+      "rewrites": [
+        {
+          "source": "/datenschutz",
+          "destination": "/datenschutz.html"
+        },
+        {
+          "source": "/impressum",
+          "destination": "/impressum.html"
+        }
+      ]
+    },
+    {
+      "target": "app",
+      "public": "build/web",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "cleanUrls": true,
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    }
+  ]
 }
